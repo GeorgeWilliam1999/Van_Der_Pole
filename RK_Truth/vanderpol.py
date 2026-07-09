@@ -38,15 +38,24 @@ def vector_field(y1_range, y2_range, n: int = 24, mu: float = MU):
     return Y1, Y2, d[:, 0].reshape(Y1.shape), d[:, 1].reshape(Y1.shape)
 
 
-def nullclines(y1, mu: float = MU):
+def nullclines(y1, mu: float = MU, clip: float = 8.0):
     """Curves where one of the two rates vanishes.
 
     dy1/dt = 0 is the horizontal axis y2 = 0.
     dy2/dt = 0 is y2 = y1 / (mu (1 - y1^2)), which blows up at y1 = +/- 1.
+
+    The three branches must be kept apart. Blanking only the points that land
+    within a hair of the asymptote is not enough: on a grid of spacing 7e-3, no
+    sample falls within 1e-3 of y1 = 1, nothing is blanked, and the plot draws a
+    near-vertical line joining the branch that runs to +infinity to the one
+    arriving from -infinity. Blank on the size of the denominator instead, which
+    does not depend on how finely y1 happens to be sampled.
     """
+    y1 = np.asarray(y1, dtype=float)
+    den = mu * (1.0 - y1 ** 2)
     with np.errstate(divide="ignore", invalid="ignore"):
-        y2 = y1 / (mu * (1.0 - y1 ** 2))
-    y2[np.abs(np.abs(y1) - 1.0) < 1e-3] = np.nan     # don't draw across the asymptote
+        y2 = y1 / den
+    y2 = np.where(np.abs(den) < np.abs(y1) / clip, np.nan, y2)   # |y2| > clip
     return y2
 
 
