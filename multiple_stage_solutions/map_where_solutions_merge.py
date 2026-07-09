@@ -7,7 +7,7 @@ that does not exist: the SSE still falls to zero, on a spurious branch, possibly
 a different branch at different y^n, giving a discontinuous propagator that
 passes its own loss.
 
-This bounds the usable dt for E3, per q. Measured, not proved -- a grid can only
+This fixes a ceiling on dt for the flow-map study. Measured, not proved -- a grid can only
 give an UPPER bound on the earliest fold in D, and nothing is learned above dt_max.
 
 Outputs results/merge_map.csv, results/merge_summary.csv
