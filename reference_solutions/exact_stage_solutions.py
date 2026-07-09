@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""E0 -- validate the Runge-Kutta objects the RK-PINN will be asked to predict.
+"""Validate the Runge-Kutta objects the RK-PINN will be asked to predict.
 
 Nothing here trains a network. These are the exact Gauss-Legendre stage states
 and endpoints, computed to machine precision, so that a trained model has
@@ -12,8 +12,8 @@ Three things are checked, and each writes a table:
     return y^n from the converged stage values. That identity IS the RK-PINN
     loss, so it has to hold to machine precision before any network is written.
 
-Outputs results/e0_tableaux.csv, results/e0_convergence.csv,
-        results/e0_reconstruction.csv
+Outputs results/tableaux.csv, results/convergence.csv,
+        results/reconstruction.csv
 """
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ import pandas as pd
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "_shared"))
-from rk_core import gauss_legendre_tableau, irk_step, reference, vdp  # noqa: E402
+from runge_kutta import gauss_legendre_tableau, irk_step, reference, vdp  # noqa: E402
 
 RESULTS = HERE / "results"
 MU, Y0 = 1.0, np.array([2.0, 0.0])
@@ -51,7 +51,7 @@ def main() -> None:
                 rows.append(dict(q=q, quantity=f"{name}[{k}]", value=g,
                                  expected=w, abs_err=abs(g - w)))
     tab = pd.DataFrame(rows)
-    tab.to_csv(RESULTS / "e0_tableaux.csv", index=False)
+    tab.to_csv(RESULTS / "tableaux.csv", index=False)
     print(f"tableaux: {len(tab)} entries, max |err| = {tab.abs_err.max():.2e}")
     assert tab.abs_err.max() < 1e-14, "tableau disagrees with the closed form"
 
@@ -77,10 +77,10 @@ def main() -> None:
                                        dev=float(np.linalg.norm(recon[j] - Y0))))
 
     conv = pd.DataFrame(rows)
-    conv.to_csv(RESULTS / "e0_convergence.csv", index=False)
-    pd.DataFrame(recon_rows).to_csv(RESULTS / "e0_reconstruction.csv", index=False)
+    conv.to_csv(RESULTS / "convergence.csv", index=False)
+    pd.DataFrame(recon_rows).to_csv(RESULTS / "reconstruction.csv", index=False)
 
-    print(f"\nconvergence: {len(conv)} cells -> results/e0_convergence.csv")
+    print(f"\nconvergence: {len(conv)} cells -> results/convergence.csv")
     print(conv.pivot(index="q", columns="dt", values="endpoint_err")
               .map(lambda v: f"{v:.2e}").to_string())
     print(f"\nmax stage-solve residual      = {conv.stage_residual.max():.2e}")

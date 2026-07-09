@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""E1b -- where the principal branch folds, over the sampling region D.
+"""Where two solutions of the stage equations merge, over the sampling region D.
 
 Continuation in dt along the principal branch at each y^n, warm-starting Newton
 from the previous dt. Past a fold the network would be asked to fit a function
@@ -10,7 +10,7 @@ passes its own loss.
 This bounds the usable dt for E3, per q. Measured, not proved -- a grid can only
 give an UPPER bound on the earliest fold in D, and nothing is learned above dt_max.
 
-Outputs results/e1_fold_surface.csv, results/e1_fold_summary.csv
+Outputs results/merge_map.csv, results/merge_summary.csv
 """
 from __future__ import annotations
 
@@ -23,8 +23,8 @@ import pandas as pd
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "_shared"))
-from loss import D_HI, D_LO, MU, Df, fold_dt                    # noqa: E402
-from rk_core import gauss_legendre_tableau                      # noqa: E402
+from rkpinn_loss import D_HI, D_LO, MU, Df, fold_dt                    # noqa: E402
+from runge_kutta import gauss_legendre_tableau                      # noqa: E402
 
 RESULTS = HERE / "results"
 NGRID, DT_MAX = 13, 3.0
@@ -43,7 +43,7 @@ def main() -> None:
                 rows.append(dict(q=q, y1=a, y2=bb,
                                  fold_dt=fold_dt(np.array([a, bb]), A, dt_max=DT_MAX)))
     surf = pd.DataFrame(rows)
-    surf.to_csv(RESULTS / "e1_fold_surface.csv", index=False)
+    surf.to_csv(RESULTS / "merge_map.csv", index=False)
 
     out = []
     for q, g in surf.groupby("q"):
@@ -57,7 +57,7 @@ def main() -> None:
             frac_safe_dt1=float((g.fold_dt > 1.0).mean()),
             frac_safe_dt2=float((g.fold_dt > 2.0).mean())))
     summ = pd.DataFrame(out)
-    summ.to_csv(RESULTS / "e1_fold_summary.csv", index=False)
+    summ.to_csv(RESULTS / "merge_summary.csv", index=False)
 
     print(f"fold surface over D, {NGRID}x{NGRID} grid, dt_max={DT_MAX}, mu={MU}")
     print(summ.to_string(index=False, float_format=lambda v: f"{v:.3g}"))

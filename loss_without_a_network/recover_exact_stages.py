@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""E1 -- does descent on the RK-PINN loss recover the exact stage solution?
+"""Does minimising the RK-PINN loss recover the exact stage solution?
 
 A wrong sign or tableau index would STILL drive the SSE to zero, at a solution
 of the wrong equations. So the test is agreement with the joint Newton solve of
-rk_core.irk_step, never the size of the loss.
+runge_kutta.irk_step, never the size of the loss.
 
 The headline number is the ratio gap / sqrt(SSE). The loss is a squared
 residual, so the parameter error scales as sqrt(SSE), not SSE: descent returns
 half the digits Newton does. That is a floor on any gradient-trained RK-PINN,
 independent of network capacity.
 
-Outputs results/e1_recovery.csv
+Outputs results/recovery.csv
 """
 from __future__ import annotations
 
@@ -23,8 +23,8 @@ import pandas as pd
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "_shared"))
-from loss import MU, Y0, newton_stage, solve_by_descent          # noqa: E402
-from rk_core import gauss_legendre_tableau, irk_step             # noqa: E402
+from rkpinn_loss import MU, Y0, newton_stage, solve_by_descent          # noqa: E402
+from runge_kutta import gauss_legendre_tableau, irk_step             # noqa: E402
 
 RESULTS = HERE / "results"
 
@@ -47,7 +47,7 @@ def main() -> None:
                 at_fold=bool(sv < 1e-6)))
 
     df = pd.DataFrame(rows)
-    df.to_csv(RESULTS / "e1_recovery.csv", index=False)
+    df.to_csv(RESULTS / "recovery.csv", index=False)
 
     ok = df[~df.at_fold]
     print(df.to_string(index=False, float_format=lambda v: f"{v:.3e}"))

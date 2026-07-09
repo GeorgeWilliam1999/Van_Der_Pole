@@ -1,7 +1,8 @@
 """The RK-PINN loss of Raissi et al. (2019) sec. 3.2, and the branch structure
 of the implicit stage system it is built on.
 
-Imported by the three e1_* scripts. Nothing here trains a network: at E1 the
+Imported by the scripts in loss_without_a_network/ and multiple_stage_solutions/.
+Nothing here trains a network: with no spatial coordinate to index, the
 2(q+1) stage values are free parameters, which is what a literal port of the
 paper to an ODE gives you (the paper's network input is a spatial index into
 the state, and van der Pol's state has only two components).
@@ -15,7 +16,7 @@ import numpy as np
 import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "_shared"))
-from rk_core import gauss_legendre_tableau, vdp  # noqa: E402
+from runge_kutta import gauss_legendre_tableau, vdp  # noqa: E402
 
 torch.set_default_dtype(torch.float64)
 

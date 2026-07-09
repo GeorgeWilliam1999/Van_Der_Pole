@@ -10,7 +10,7 @@ Design constraints:
     have no glyph for them and silently drop the character. Use <tspan dy>.
     But NOT inside a rotate()d <text>, where the dy offsets stack visibly.
 
-Geometry comes from rk_core, so every point is an exact Runge-Kutta object.
+Geometry comes from runge_kutta.py, so every point is an exact Runge-Kutta object.
 No network is trained anywhere in this file.
 """
 import sys
@@ -20,7 +20,7 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "_shared"))
-from rk_core import gauss_legendre_tableau, vdp, reference, irk_step, rk4_stages
+from runge_kutta import gauss_legendre_tableau, vdp, reference, irk_step, rk4_stages
 
 FIGURES = HERE / "figures"
 
@@ -334,7 +334,7 @@ def fig_stages():
 
 if __name__ == "__main__":
     FIGURES.mkdir(exist_ok=True)
-    for nm, fn in [("models", fig_models), ("stages", fig_stages)]:
+    for nm, fn in [("two_models", fig_models), ("order_vs_stages", fig_stages)]:
         s = fn()
-        (FIGURES / f"fig_{nm}.svg").write_text(s)
-        print(f"figures/fig_{nm}.svg: {len(s.encode())/1024:.1f} KiB")
+        (FIGURES / f"{nm}.svg").write_text(s)
+        print(f"figures/{nm}.svg: {len(s.encode())/1024:.1f} KiB")

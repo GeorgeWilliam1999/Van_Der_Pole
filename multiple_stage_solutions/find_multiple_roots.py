@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""E1 -- the implicit stage system has several roots, and the loss cannot tell
+"""The implicit stage equations have several solutions, and the loss cannot tell
 them apart.
 
 Two studies:
@@ -15,7 +15,7 @@ Two studies:
     predictor, selects the branch continuously connected to dt -> 0 -- the only
     branch the Runge-Kutta order theory describes. Nothing in the loss does.
 
-Outputs results/e1_fold_q1.csv, results/e1_branches.csv
+Outputs results/exact_double_root.csv, results/distinct_roots.csv
 """
 from __future__ import annotations
 
@@ -28,8 +28,8 @@ import pandas as pd
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent / "_shared"))
-from loss import MU, Y0, solve_by_descent, stage_jacobian       # noqa: E402
-from rk_core import gauss_legendre_tableau, irk_step, reference, vdp  # noqa: E402
+from rkpinn_loss import MU, Y0, solve_by_descent, stage_jacobian       # noqa: E402
+from runge_kutta import gauss_legendre_tableau, irk_step, reference, vdp  # noqa: E402
 
 RESULTS = HERE / "results"
 
@@ -48,7 +48,7 @@ def main() -> None:
                          smallest_sv=sv, multiplicity=2 if Y1 == 1.0 else 1,
                          is_fold=sv < 1e-6))
     fold = pd.DataFrame(rows)
-    fold.to_csv(RESULTS / "e1_fold_q1.csv", index=False)
+    fold.to_csv(RESULTS / "exact_double_root.csv", index=False)
     print("exact fold, q=1 dt=2, from Y_1 (Y_1 - 1)^2 = 0:")
     print(fold.to_string(index=False))
 
@@ -71,7 +71,7 @@ def main() -> None:
             is_principal=bool(np.linalg.norm(Z[-1] - y1_new) < 1e-6),
             dist_to_exact=float(np.linalg.norm(Z[-1] - exact))))
     br = pd.DataFrame(rows)
-    br.to_csv(RESULTS / "e1_branches.csv", index=False)
+    br.to_csv(RESULTS / "distinct_roots.csv", index=False)
 
     print(f"\nq=2 dt=4: {len(br)} distinct roots, every one a global minimum of the SSE")
     print(br.to_string(index=False, float_format=lambda v: f"{v:.4g}"))
