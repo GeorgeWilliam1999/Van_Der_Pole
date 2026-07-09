@@ -1,0 +1,2 @@
+scheme,step_size,t_end,mu,n_trajectories,n_samples,stored_every
+"explicit Runge-Kutta, 7 stages, order 6",0.001,40.0,1.0,8,4001,10

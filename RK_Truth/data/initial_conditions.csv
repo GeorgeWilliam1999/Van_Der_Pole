@@ -1,0 +1,9 @@
+label,y1_0,y2_0
+near the origin,0.05,0.0
+inside the loop,0.5,0.0
+"inside, off-axis",-0.8,0.6
+close to the loop,2.0,0.0
+just outside,2.5,0.0
+"far outside, above",-2.2,2.5
+"far outside, below",1.5,-2.8
+high velocity,0.0,2.6
