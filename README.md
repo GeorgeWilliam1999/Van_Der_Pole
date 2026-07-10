@@ -29,10 +29,11 @@ The notebook is the source for the corresponding Notion write-up.
 | folder | what it is |
 |---|---|
 | [`RK_Truth/`](RK_Truth/) | **The reference trajectories.** A fixed-step, seven-stage, sixth-order explicit Runge–Kutta integrator, verified rather than trusted; eight starting points integrated to `t = 40` at step `1e-3`; the closed loop and its period. Everything later is scored against this. |
+| [`continuous_time_network/`](continuous_time_network/) | **The paper's first technique (section 3.1), and where it fails.** The network *is* the trajectory: time in, state out, anchored only at `t = 0`. Accurate to one lap, then collapses onto spurious solutions while the loss keeps falling — the paper's own motivation for the second technique, measured. |
+| [`discrete_time_network/`](discrete_time_network/) | **The paper's second technique (section 3.2).** One network learns a whole implicit Runge–Kutta step (`q = 8` Gauss–Legendre stages, `dt = 0.8`) from *any* starting state on the training rectangle, self-supervised through the scheme's own equations — no trajectory data. The reusable one-step map the rest of the project builds on. |
 
-Planned next (see the Notion to-do list): the paper's two techniques — the continuous-time
-network and the discrete-time network built on an implicit Runge–Kutta step — with the goal
-of a network that takes a starting state and outputs a trajectory.
+Still to come (see the Notion to-do list): whole trajectories from the one-step map, the
+learned-Runge-Kutta-weights study, and the data-trained baseline.
 
 ## Environment
 
