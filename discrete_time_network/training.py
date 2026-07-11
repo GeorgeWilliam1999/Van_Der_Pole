@@ -59,6 +59,8 @@ H_REF = 1e-3      # RK_Truth's step for every reference regeneration
 
 CHAIN_START = (2.0, 0.0)      # the reference start "close to the loop"
 CHAIN_STEPS = 17              # 13.6 time units: just over two laps
+LAP = 6.663286859             # one lap of the loop, measured in RK_Truth
+LONG_HORIZONS = (3.0, 7.0, 14.0, 27.0, 40.0)   # the continuous-time sweep's range
 
 # Four starts for the close-up figures, from RK_Truth's named list.
 SHOWCASE_STARTS = {
@@ -287,6 +289,66 @@ def chain(model: OneStepNetwork, y0=CHAIN_START, n_steps: int = CHAIN_STEPS,
         r = rk6.integrate_to(_f, r, dt, H_REF)
         ref[k + 1] = r[0]
     return dt * np.arange(n_steps + 1), net, ref
+
+
+def long_chain_study(seeds=SEEDS, q: int = HEADLINE_Q, dt: float = DT,
+                     t_end: float = 40.0, verbose: bool = True):
+    """Chain the headline network out to the horizons the continuous-time
+    sweep was tested on: T in {3, 7, 14, 27, 40}, half a lap to six laps.
+
+    The sweep did not keep the trained weights, but every run is fully seeded,
+    so the same call reproduces the same network bit for bit -- the retrained
+    loss is saved so the notebook can assert it matches the sweep's row. Each
+    network is applied 50 times from (2, 0); the reference walks alongside at
+    the same times. This time the weights ARE saved, for step 4 to reuse.
+
+    Returns (per-horizon relative L2 table, arrays). Cached in
+    results/long_chain.npz + long_chain_rel_l2.csv; delete both to redo.
+    """
+    cache, csv = RESULTS / "long_chain.npz", RESULTS / "long_chain_rel_l2.csv"
+    if cache.exists() and csv.exists():
+        with np.load(cache) as z:
+            return pd.read_csv(csv), {k: z[k] for k in z.files}
+
+    n_steps = int(round(t_end / dt))
+    t = dt * np.arange(n_steps + 1)
+    ref = np.empty((n_steps + 1, 2))
+    ref[0] = CHAIN_START
+    r = np.array([list(CHAIN_START)])
+    for k in range(n_steps):
+        r = rk6.integrate_to(_f, r, dt, H_REF)
+        ref[k + 1] = r[0]
+
+    RESULTS.mkdir(exist_ok=True)
+    arrays, rows = dict(t=t, ref=ref), []
+    for seed in seeds:
+        model, history = train_one(seed, q, dt)
+        torch.save(model.state_dict(),
+                   RESULTS / f"one_step_q{q}_seed{seed}.pt")
+        net = np.empty_like(ref)
+        net[0] = CHAIN_START
+        y = torch.tensor([list(CHAIN_START)])
+        with torch.no_grad():
+            for k in range(n_steps):
+                y = model(y)[:, -1, :]
+                net[k + 1] = y.numpy()[0]
+        arrays[f"seed{seed}_chain"] = net
+        for T in LONG_HORIZONS:
+            m = t <= T + 1e-9
+            rows.append(dict(horizon=T, laps=T / LAP, seed=seed, q=q,
+                             rel_l2=float(np.linalg.norm(net[m] - ref[m])
+                                          / np.linalg.norm(ref[m])),
+                             retrained_loss=history[-1]["loss"]))
+        if verbose:
+            per = {r["horizon"]: r["rel_l2"] for r in rows
+                   if r["seed"] == seed}
+            print(f"  seed {seed}: " + "  ".join(
+                f"T={T:g} {per[T]:.2e}" for T in LONG_HORIZONS), flush=True)
+
+    df = pd.DataFrame(rows)
+    df.to_csv(csv, index=False)
+    np.savez_compressed(cache, **arrays)
+    return df, arrays
 
 
 def run_sweep(qs=QS, seeds=SEEDS, dt: float = DT, verbose: bool = True):

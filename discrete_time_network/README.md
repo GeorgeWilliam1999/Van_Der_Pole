@@ -51,6 +51,8 @@ $PY training.py     # guardrails + the 15-run sweep, ~30 minutes; writes results
 | `summary.csv` | one row per (q, seed): loss, endpoint relative L2, all-outputs relative L2, chained relative L2, timing |
 | `training_histories.csv` | the loss after every optimiser restart, every run |
 | `predictions.npz` | the scoring grid, per-q regenerated references and nodes, per-run grid outputs, error maps, per-output errors, chained trajectories, close-up predictions |
+| `long_chain.npz`, `long_chain_rel_l2.csv` | the headline network chained 50 steps to T = 40 — the continuous-time sweep's horizons — with per-horizon relative L2 per seed |
+| `one_step_q8_seed{0,1,2}.pt` | the trained weights of the headline networks (reproduced deterministically from the seeds; saved for step 4 to reuse) |
 
 ## Metric
 
@@ -59,7 +61,8 @@ regenerated reference, as a function of q, with the exact scheme's error on the 
 underneath — the network rides the scheme down, then flattens onto its capacity floor. Also
 reported: the same per output (each stage at its node time, then the endpoint), the error
 over the plane normalised by each component's scale (well defined where a component crosses
-zero), and the error growth when the step is chained from `(2, 0)` for two laps — the preview
-of the project's next step. At the headline q = 8 the exact scheme's own error is at most
+zero), and the error growth when the step is chained from `(2, 0)` — two laps in detail, and
+out to T = 40 (six laps, 50 steps) across the same horizons the continuous-time sweep was
+tested on, where that technique collapsed past one lap. At the headline q = 8 the exact scheme's own error is at most
 `1.7e-7` over the rectangle (median `1e-10`), three-plus orders below the network, so every
 error measured there is the network's.
