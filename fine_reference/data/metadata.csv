@@ -1,0 +1,2 @@
+scheme,fine_step,stored_spacing,dt,n_times,n_starts,n_named,n_sampled,lhc_seed,mu,halving_max,consistency_max,npz_MB
+"explicit Runge-Kutta, 7 stages, order 6 (RK_Truth.rk6)",0.0001,0.001,0.8,801,264,8,256,7,1.0,4.352980466692758e-14,3.7356983887120036e-14,3.277
