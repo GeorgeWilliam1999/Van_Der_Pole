@@ -28,7 +28,7 @@ from model import (MU, START, TrajectoryNetwork, collocation_times,
 
 HERE = Path(__file__).resolve().parent
 RESULTS = HERE / "results"
-REFERENCE_FILE = HERE.parent / "RK_Truth" / "data" / "trajectories.npz"
+REFERENCE_FILE = HERE.parent.parent / "RK_Truth" / "data" / "trajectories.npz"
 
 HORIZONS = (3.0, 7.0, 14.0, 27.0, 40.0)     # ~0.45 to ~6 laps of the loop
 SEEDS = (0, 1, 2)
