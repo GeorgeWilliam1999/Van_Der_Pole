@@ -63,6 +63,16 @@ ADAM_LR = 1e-3
 LOG_EVERY = 500                              # history row cadence (Adam)
 SNAPSHOT_EVERY = 2_000                       # weight-profile cadence (Adam)
 
+# The budget-extension test (George, 2026-07-12): every run at T >= 14 hit the
+# 60k step cap with the front mid-crossing. Hypothesis to test: the failures
+# beyond two laps are budget starvation and nothing else -- same algorithm,
+# same everything, 4x the Adam budget, only the runs that starved. The 60k
+# results stay untouched in results/ as the baseline; these go to
+# results_extended_budget/T<horizon>/ (one directory per horizon so the three
+# horizons can run as concurrent processes without racing the saves).
+EXTENDED_STEPS = 240_000
+EXTENDED = {14.0: (2,), 27.0: (0, 1, 2), 40.0: (0, 1, 2)}
+
 
 def load_reference(label: str = "close to the loop"):
     """The reference trajectory this network is scored against. Never trained on."""
@@ -182,6 +192,7 @@ def evaluate(model: TrajectoryNetwork, horizon: float,
 
 
 def run_sweep(horizons=HORIZONS, seeds=SEEDS, per_unit: float = 20.0,
+              adam_steps: int = ADAM_STEPS, results_dir: Path = RESULTS,
               verbose: bool = True):
     """Train every (horizon, seed), score each, save everything under results/.
 
@@ -198,28 +209,28 @@ def run_sweep(horizons=HORIZONS, seeds=SEEDS, per_unit: float = 20.0,
     interrupted sweep resumes where it stopped and a finished one returns
     immediately. Delete results/ to retrain everything from scratch.
     """
-    RESULTS.mkdir(exist_ok=True)
+    results_dir.mkdir(parents=True, exist_ok=True)
     t_ref, y_ref = load_reference()
 
     summary, histories, arrays, weights_npz, done = [], [], {}, {}, set()
-    if (RESULTS / "sweep_summary.csv").exists():
-        summary = pd.read_csv(RESULTS / "sweep_summary.csv").to_dict("records")
+    if (results_dir / "sweep_summary.csv").exists():
+        summary = pd.read_csv(results_dir / "sweep_summary.csv").to_dict("records")
         done = {(r["horizon"], r["seed"]) for r in summary}
-        histories = pd.read_csv(RESULTS / "training_histories.csv").to_dict("records")
-        with np.load(RESULTS / "predictions.npz") as z:
+        histories = pd.read_csv(results_dir / "training_histories.csv").to_dict("records")
+        with np.load(results_dir / "predictions.npz") as z:
             arrays = {k: z[k] for k in z.files}
-        with np.load(RESULTS / "weight_profiles.npz") as z:
+        with np.load(results_dir / "weight_profiles.npz") as z:
             weights_npz = {k: z[k] for k in z.files}
         if verbose and done:
             print(f"  resuming: {len(done)} of "
                   f"{len(horizons) * len(seeds)} runs already saved")
 
     def save():
-        pd.DataFrame(summary).to_csv(RESULTS / "sweep_summary.csv", index=False)
-        pd.DataFrame(histories).to_csv(RESULTS / "training_histories.csv",
+        pd.DataFrame(summary).to_csv(results_dir / "sweep_summary.csv", index=False)
+        pd.DataFrame(histories).to_csv(results_dir / "training_histories.csv",
                                        index=False)
-        np.savez_compressed(RESULTS / "predictions.npz", **arrays)
-        np.savez_compressed(RESULTS / "weight_profiles.npz", **weights_npz)
+        np.savez_compressed(results_dir / "predictions.npz", **arrays)
+        np.savez_compressed(results_dir / "weight_profiles.npz", **weights_npz)
 
     for horizon in horizons:
         for seed in seeds:
@@ -227,7 +238,7 @@ def run_sweep(horizons=HORIZONS, seeds=SEEDS, per_unit: float = 20.0,
                 continue
             tic = time.perf_counter()
             model, history, snapshots, snapshot_steps, front_arrived = \
-                train_one(horizon, seed, per_unit)
+                train_one(horizon, seed, per_unit, adam_steps=adam_steps)
             seconds = time.perf_counter() - tic
             ev = evaluate(model, horizon, t_ref, y_ref)
 
@@ -236,6 +247,7 @@ def run_sweep(horizons=HORIZONS, seeds=SEEDS, per_unit: float = 20.0,
             summary.append(dict(
                 horizon=horizon, laps=horizon / LAP, seed=seed,
                 n_collocation=len(collocation_times(horizon, per_unit, seed)),
+                adam_budget=adam_steps,
                 adam_steps_used=adam_rows[-1]["step"] + 1,
                 front_arrived=front_arrived,
                 lbfgs_restarts=sum(r["phase"] == "lbfgs" for r in history),
@@ -268,15 +280,41 @@ def run_sweep(horizons=HORIZONS, seeds=SEEDS, per_unit: float = 20.0,
     return pd.DataFrame(summary)
 
 
+def run_extended(horizon: float):
+    """Re-run this horizon's budget-starved seeds at 4x the Adam budget.
+
+    Same algorithm, same everything else; results go to their own directory
+    per horizon so the horizons can run as concurrent processes. Resumable
+    like the main sweep.
+    """
+    out = HERE / "results_extended_budget" / f"T{horizon:g}"
+    return run_sweep(horizons=(horizon,), seeds=EXTENDED[horizon],
+                     adam_steps=EXTENDED_STEPS, results_dir=out)
+
+
+def load_extended():
+    """Every extended-budget summary that exists so far, concatenated."""
+    frames = [pd.read_csv(p) for p in
+              sorted((HERE / "results_extended_budget").glob("T*/sweep_summary.csv"))]
+    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+
+
 def load_initial_pass():
     """The Initial_pass sweep summary, for the head-to-head comparison."""
     return pd.read_csv(INITIAL_PASS_SUMMARY)
 
 
 if __name__ == "__main__":
-    print("causally weighted horizon sweep (Adam front propagation + "
-          "L-BFGS polish), 3 seeds each:")
-    df = run_sweep()
-    print()
-    print(df.groupby("horizon").rel_l2.median().to_string(
-        float_format=lambda v: f"{v:.3e}"))
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "extended":
+        horizon = float(sys.argv[2])
+        print(f"extended-budget re-run: T = {horizon:g}, "
+              f"seeds {EXTENDED[horizon]}, {EXTENDED_STEPS:,} Adam steps:")
+        df = run_extended(horizon)
+    else:
+        print("causally weighted horizon sweep (Adam front propagation + "
+              "L-BFGS polish), 3 seeds each:")
+        df = run_sweep()
+        print()
+        print(df.groupby("horizon").rel_l2.median().to_string(
+            float_format=lambda v: f"{v:.3e}"))

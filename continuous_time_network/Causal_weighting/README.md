@@ -43,6 +43,7 @@ comparison end up optimising the same objective with the same optimiser.
 | `results/training_histories.csv` | `training.run_sweep` | per Adam log step / L-BFGS restart: losses, epsilon, min weight, awake fraction |
 | `results/predictions.npz` | `training.run_sweep` | per run: network trajectory, scale-normalised pointwise error, residual magnitude, on the reference grid |
 | `results/weight_profiles.npz` | `training.run_sweep` | per run: snapshots of the causal weights as the front advanced, their Adam steps, and the collocation times |
+| `results_extended_budget/T*/` | `training.run_extended` | the budget-extension test (George, 2026-07-12): the seven runs that hit the 60k step cap (T = 14 seed 2, T = 27 and T = 40 all seeds), re-run identically at 240k steps; same file layout as `results/`, one directory per horizon so the horizons run as concurrent processes |
 | `figures/*.png` | the notebook | all plots |
 
 ## Metric

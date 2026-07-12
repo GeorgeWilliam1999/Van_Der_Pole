@@ -1,0 +1,2 @@
+horizon,laps,seed,n_collocation,adam_budget,adam_steps_used,front_arrived,lbfgs_restarts,seconds,loss_total,loss_start,loss_residual,rel_l2
+14.0,2.1010651794302406,2,280,240000,92001,True,6,800.0,2.2175537965048855e-07,1.859048855139742e-13,2.2175519374560303e-07,0.6122103677090445
