@@ -1,0 +1,9 @@
+START train_all(3.2, 64) 3 seeds
+  seed 0: loss 2.667e-04  (1249s, 6 restarts)
+  seed 1: loss 4.501e-04  (668s, 6 restarts)
+  seed 2: loss 2.570e-04  (609s, 6 restarts)
+ big_step  stages  seed  n_train  restarts_run  final_loss  seconds
+      3.2      64     0     2000             6    0.000267   1249.2
+      3.2      64     1     2000             6    0.000450    668.0
+      3.2      64     2     2000             6    0.000257    609.4
+ALL DONE total 2526.6 s

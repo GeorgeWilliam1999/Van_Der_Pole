@@ -1,0 +1,4 @@
+big_step,stages,seed,n_train,restarts_run,final_loss,seconds,source
+3.2,64,0,2000,,0.00026665982196415975,,loaded
+3.2,64,1,2000,,0.0004500833659179453,,loaded
+3.2,64,2,2000,,0.0002570127058172463,,loaded
