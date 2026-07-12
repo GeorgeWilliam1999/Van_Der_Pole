@@ -1,0 +1,51 @@
+data-baseline reference cost per training-set size:
+  n =    50  ->      39,950 rk6 steps (physics: 0)
+  n =   125  ->      99,875 rk6 steps (physics: 0)
+  n =   250  ->     199,750 rk6 steps (physics: 0)
+  n =   500  ->     399,500 rk6 steps (physics: 0)
+  n =  1000  ->     799,000 rk6 steps (physics: 0)
+  n =  2000  ->   1,598,000 rk6 steps (physics: 0)
+
+sweep: 2 losses x 6 sizes x 3 seeds = 36 runs
+  physics  n    50  seed 0  train loss 1.505e-05  endpoint rel L2 1.1251e-02  (637s)
+  physics  n    50  seed 1  train loss 9.732e-06  endpoint rel L2 6.1152e-03  (400s)
+  physics  n    50  seed 2  train loss 7.076e-06  endpoint rel L2 9.2496e-03  (154s)
+  physics  n   125  seed 0  train loss 1.636e-05  endpoint rel L2 6.8415e-03  (130s)
+  physics  n   125  seed 1  train loss 3.679e-05  endpoint rel L2 6.3423e-03  (117s)
+  physics  n   125  seed 2  train loss 5.996e-06  endpoint rel L2 5.6556e-03  (112s)
+  physics  n   250  seed 0  train loss 1.876e-05  endpoint rel L2 4.8043e-03  (114s)
+  physics  n   250  seed 1  train loss 1.233e-05  endpoint rel L2 4.0973e-03  (113s)
+  physics  n   250  seed 2  train loss 5.017e-06  endpoint rel L2 2.5615e-03  (119s)
+  physics  n   500  seed 0  train loss 1.939e-05  endpoint rel L2 5.2207e-03  (111s)
+  physics  n   500  seed 1  train loss 2.051e-05  endpoint rel L2 3.3645e-03  (115s)
+  physics  n   500  seed 2  train loss 3.345e-06  endpoint rel L2 1.8166e-03  (112s)
+  physics  n  1000  seed 0  train loss 1.638e-05  endpoint rel L2 4.7172e-03  (123s)
+  physics  n  1000  seed 1  train loss 2.589e-05  endpoint rel L2 3.3901e-03  (99s)
+  physics  n  1000  seed 2  train loss 7.182e-06  endpoint rel L2 2.6751e-03  (101s)
+  physics  n  2000  seed 0  train loss 2.045e-05  endpoint rel L2 3.7705e-03  (84s)
+  physics  n  2000  seed 1  train loss 2.623e-05  endpoint rel L2 3.6080e-03  (49s)
+  physics  n  2000  seed 2  train loss 6.566e-06  endpoint rel L2 2.4300e-03  (25s)
+  data     n    50  seed 0  train loss 1.695e-06  endpoint rel L2 6.3777e-03  (20s)
+  data     n    50  seed 1  train loss 2.581e-06  endpoint rel L2 9.8207e-03  (21s)
+  data     n    50  seed 2  train loss 8.468e-07  endpoint rel L2 1.0833e-02  (18s)
+  data     n   125  seed 0  train loss 2.285e-06  endpoint rel L2 2.9878e-03  (21s)
+  data     n   125  seed 1  train loss 3.021e-06  endpoint rel L2 2.5700e-03  (20s)
+  data     n   125  seed 2  train loss 1.837e-06  endpoint rel L2 3.0698e-03  (18s)
+  data     n   250  seed 0  train loss 3.360e-06  endpoint rel L2 1.8151e-03  (19s)
+  data     n   250  seed 1  train loss 3.906e-06  endpoint rel L2 2.0985e-03  (25s)
+  data     n   250  seed 2  train loss 1.858e-06  endpoint rel L2 1.6282e-03  (22s)
+  data     n   500  seed 0  train loss 2.834e-06  endpoint rel L2 1.6186e-03  (18s)
+  data     n   500  seed 1  train loss 4.030e-06  endpoint rel L2 1.9222e-03  (21s)
+  data     n   500  seed 2  train loss 2.231e-06  endpoint rel L2 1.6048e-03  (20s)
+  data     n  1000  seed 0  train loss 2.428e-06  endpoint rel L2 1.7039e-03  (24s)
+  data     n  1000  seed 1  train loss 3.442e-06  endpoint rel L2 1.9390e-03  (25s)
+  data     n  1000  seed 2  train loss 1.697e-06  endpoint rel L2 1.1530e-03  (27s)
+  data     n  2000  seed 0  train loss 3.652e-06  endpoint rel L2 1.6156e-03  (28s)
+  data     n  2000  seed 1  train loss 3.542e-06  endpoint rel L2 1.8465e-03  (28s)
+  data     n  2000  seed 2  train loss 1.745e-06  endpoint rel L2 1.2305e-03  (27s)
+
+median endpoint relative L2 (loss kind x n):
+n               50         125        250        500        1000       2000
+loss_kind                                                                  
+physics   9.2496e-03 6.3423e-03 4.0973e-03 3.3645e-03 3.3901e-03 3.6080e-03
+data      9.8207e-03 2.9878e-03 1.8151e-03 1.6186e-03 1.7039e-03 1.6156e-03
