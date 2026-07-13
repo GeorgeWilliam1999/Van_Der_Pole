@@ -1,0 +1,1 @@
+{"tag": "unweighted_T14_d2_w128_s3", "variant": "unweighted", "horizon": 14.0, "depth": 2, "width": 128, "start_idx": 3, "start_y1": 0.8705005271080477, "start_y2": 1.760354640194869, "n_parameters": 17026, "seed": 3, "rel_l2": 0.9048797363924053, "rho_mse": 0.3924436364255673, "seconds": 22.0, "smoke": false, "loss_total": 0.047600083313025975, "lbfgs_restarts": 4}

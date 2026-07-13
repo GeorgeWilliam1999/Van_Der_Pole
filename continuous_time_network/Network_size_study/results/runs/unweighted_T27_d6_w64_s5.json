@@ -1,0 +1,1 @@
+{"tag": "unweighted_T27_d6_w64_s5", "variant": "unweighted", "horizon": 27.0, "depth": 6, "width": 64, "start_idx": 5, "start_y1": -2.3210651863245637, "start_y2": -2.7871761698123416, "n_parameters": 21058, "seed": 5, "rel_l2": 0.8598026545931517, "rho_mse": 0.3832559678057605, "seconds": 49.3, "smoke": false, "loss_total": 0.03223598938190738, "lbfgs_restarts": 6}

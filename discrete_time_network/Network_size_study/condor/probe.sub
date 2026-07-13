@@ -1,0 +1,13 @@
+# Probe: can a worker node see /data/bfys and run the TE conda python?
+universe              = vanilla
+executable            = /data/bfys/gscriven/Van_Der_Pole/discrete_time_network/Network_size_study/condor/probe.sh
+initialdir            = /data/bfys/gscriven/Van_Der_Pole/discrete_time_network/Network_size_study
+output                = condor/logs/probe.out
+error                 = condor/logs/probe.err
+log                   = condor/logs/probe.log
+should_transfer_files = NO
+request_cpus          = 1
+request_memory        = 1G
++UseOS                = "el9"
++JobCategory          = "short"
+queue
