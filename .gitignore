@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 .ipynb_checkpoints/
 **/condor/logs/
+
+# trained weights of the size sweep: 95 MB, regenerable from the seeds (train_size.py)
+discrete_time_network/Network_size_study/results/runs/*.pt
