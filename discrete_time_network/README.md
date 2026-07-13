@@ -53,6 +53,8 @@ $PY training.py     # guardrails + the 15-run sweep, ~30 minutes; writes results
 | `predictions.npz` | the scoring grid, per-q regenerated references and nodes, per-run grid outputs, error maps, per-output errors, chained trajectories, close-up predictions |
 | `long_chain.npz`, `long_chain_rel_l2.csv` | the headline network chained 50 steps to T = 40 — the continuous-time sweep's horizons — with per-horizon relative L2 per seed |
 | `one_step_q8_seed{0,1,2}.pt` | the trained weights of the headline networks (reproduced deterministically from the seeds; saved for step 4 to reuse) |
+| `relative_error_mse.csv` | one row per (q, seed) of the agreed scalar relative error `rho = min(1, \|Δy\|²/\|y\|²)` (George, 2026-07-13) over the held-out grid endpoint: columns `q, seed, n` (grid states, 441), `capped` (states at rho = 1 — always 1, the origin), `mse_rho` (mean of rho), `median_rho` (median of rho) |
+| `test_set_relative_error.npz` | `starts` (108, 2) the named + Latin-hypercube held-out test states, `t` (50,) the chain times, `rho` (3 seeds, 50 steps, 108 states) the same scalar metric evaluated along each state's 50-step (six-lap) chain, `min_modulus` the smallest true-state modulus actually seen |
 
 ## Metric
 
@@ -66,3 +68,13 @@ out to T = 40 (six laps, 50 steps) across the same horizons the continuous-time 
 tested on, where that technique collapsed past one lap. At the headline q = 8 the exact scheme's own error is at most
 `1.7e-7` over the rectangle (median `1e-10`), three-plus orders below the network, so every
 error measured there is the network's.
+
+**The agreed scalar relative error** (George, 2026-07-13, superseding an earlier
+per-component version): `rho = min(1, ||y_ref - y_pred||² / ||y_ref||²)`, Euclidean norm
+over both components, evaluated pointwise and reported as the MSE (mean of rho) and the
+median. The cap at 1 handles the blow-up as the true state nears the origin, so nothing is
+excluded — including the one held-out grid state whose true endpoint is exactly `(0, 0)`,
+resolved by the cap (`rho = 0` if the network's residual there is also exactly 0, else 1).
+Implemented once in `model.capped_relative_error`. Away from the cap this scalar equals
+exactly twice the old "mean over both components" MSE. See section 11 of
+`one_step_network.ipynb` for the derivation and a numeric sanity check.

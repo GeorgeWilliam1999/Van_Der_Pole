@@ -53,3 +53,10 @@ the start (2, 0): `||y_net - y_ref||_2 / ||y_ref||_2` over both components on
 the reference 0.01 grid. Figures also show the pointwise error normalised by
 each component's scale (max |y_i|), which stays defined where the trajectory
 crosses zero. The reference is never trained on.
+
+Figure 9 additionally shows the project's agreed **scalar** pointwise relative error
+(George, 2026-07-13): `rho(t) = min(1, ||y_ref(t) - y_net(t)||^2 / ||y_ref(t)||^2)`, Euclidean
+norm over both components, capped at 1 to handle the blow-up near the origin (not needed on
+these particular trajectories: the true modulus never drops below 1.531). Computed fresh from
+`predictions.npz` in the notebook, no separate cache file. Away from the cap it equals exactly
+twice the earlier per-component version of this figure's MSE.

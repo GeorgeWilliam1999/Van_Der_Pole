@@ -100,6 +100,28 @@ def loss_fn(model: OneStepNetwork, y: torch.Tensor, dt: float,
     return (reconstruction_residuals(model, y, dt, A, b, mu) ** 2).mean()
 
 
+def capped_relative_error(y_ref: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
+    """The agreed scalar pointwise relative error (George, 2026-07-13).
+
+        rho = min( 1, |y_ref - y_pred|^2 / |y_ref|^2 )
+
+    with |.| the Euclidean norm over the two state components. The cap at 1
+    handles the blow-up as the true state approaches the origin, so there is
+    no exclusion: at the one point where |y_ref| = 0 exactly, rho is defined
+    as 0 if the residual is also exactly 0, else 1 (the cap covers the 0/0).
+
+    y_ref, y_pred: (..., 2), broadcastable. Returns rho of shape (...).
+    """
+    diff2 = np.sum((np.asarray(y_ref) - np.asarray(y_pred)) ** 2, axis=-1)
+    norm2 = np.sum(np.asarray(y_ref) ** 2, axis=-1)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        rho = diff2 / norm2
+    zero = norm2 == 0
+    if np.any(zero):
+        rho = np.where(zero, np.where(diff2 == 0, 0.0, 1.0), rho)
+    return np.minimum(rho, 1.0)
+
+
 def training_states(n: int, seed: int = 0, rectangle=RECTANGLE) -> np.ndarray:
     """n starting states over the rectangle by Latin hypercube sampling.
 

@@ -44,8 +44,8 @@ sys.path.insert(0, str(HERE.parent / "RK_Truth"))   # the reference lives there
 import rk6                                           # noqa: E402
 import vanderpol as vdp                              # noqa: E402
 import irk                                           # noqa: E402
-from model import (MU, RECTANGLE, OneStepNetwork, loss_fn,   # noqa: E402
-                   reconstruction_residuals, training_states)
+from model import (MU, RECTANGLE, OneStepNetwork, capped_relative_error,  # noqa: E402
+                   loss_fn, reconstruction_residuals, training_states)
 
 DT = 0.8          # the paper's Allen-Cahn step size, kept deliberately
 QS = (2, 4, 8, 16, 32)   # the sweep the to-do asks for: does the error fall
@@ -365,13 +365,15 @@ def test_set_chains(q: int = HEADLINE_Q, dt: float = DT, t_end: float = 40.0,
     states over the rectangle (its own seed) -- none of them training states,
     grid states, or the chain start. Each is chained with the saved headline
     networks for 50 steps (six laps) while the reference walks alongside, and
-    the agreed metric is evaluated per state and per time:
+    the agreed metric is evaluated per state and per time (George, 2026-07-13):
 
-        rho(state, t_k) = mean over components of ((y - y_hat) / ||y||)^2,
+        rho(state, t_k) = min( 1, |y - y_hat|^2 / ||y||^2 ),
 
-    with ||y|| the modulus of the TRUE state at that time. The modulus only
-    vanishes at the equilibrium, which no test trajectory visits, so nothing
-    is excluded here; the smallest denominator actually seen is reported.
+    with ||y|| the Euclidean modulus of the TRUE state at that time and the
+    cap handling the blow-up near the origin -- see model.capped_relative_error.
+    Nothing is excluded: the smallest denominator actually seen is reported,
+    and the single point where it is exactly zero (if any test trajectory
+    ever lands there) resolves through the cap, not an exclusion.
 
     Returns (starts, t, rho, min_modulus) with rho of shape
     (n_seeds, n_steps, n_starts). Cached in results/test_set_relative_error.npz.
@@ -403,8 +405,7 @@ def test_set_chains(q: int = HEADLINE_Q, dt: float = DT, t_end: float = 40.0,
         with torch.no_grad():
             for k in range(n_steps):
                 yt = model(yt)[:, -1, :]
-                r = (yt.numpy() - ref[k]) / norm[k]
-                rho[si, k] = (r ** 2).mean(axis=1)
+                rho[si, k] = capped_relative_error(ref[k], yt.numpy())
         if verbose:
             med = np.median(rho[si], axis=1)
             print(f"  seed {s}: median rho at 1 lap {med[7]:.2e}, "
