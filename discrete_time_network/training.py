@@ -351,6 +351,72 @@ def long_chain_study(seeds=SEEDS, q: int = HEADLINE_Q, dt: float = DT,
     return df, arrays
 
 
+TEST_SET_SEED = 11            # held-out test set: distinct from training seeds
+                              # (0, 1, 2), the scoring grid, and the chain start
+
+
+def test_set_chains(q: int = HEADLINE_Q, dt: float = DT, t_end: float = 40.0,
+                    n_random: int = 100, seed: int = TEST_SET_SEED,
+                    verbose: bool = True):
+    """The agreed relative error over a TEST SET of starting states, chained.
+
+    The single-(2,0) chain shows one trajectory; this shows the distribution.
+    Test set: the 8 named starts from RK_Truth plus `n_random` Latin-hypercube
+    states over the rectangle (its own seed) -- none of them training states,
+    grid states, or the chain start. Each is chained with the saved headline
+    networks for 50 steps (six laps) while the reference walks alongside, and
+    the agreed metric is evaluated per state and per time:
+
+        rho(state, t_k) = mean over components of ((y - y_hat) / ||y||)^2,
+
+    with ||y|| the modulus of the TRUE state at that time. The modulus only
+    vanishes at the equilibrium, which no test trajectory visits, so nothing
+    is excluded here; the smallest denominator actually seen is reported.
+
+    Returns (starts, t, rho, min_modulus) with rho of shape
+    (n_seeds, n_steps, n_starts). Cached in results/test_set_relative_error.npz.
+    """
+    cache = RESULTS / "test_set_relative_error.npz"
+    if cache.exists():
+        with np.load(cache, allow_pickle=True) as z:
+            return z["starts"], z["t"], z["rho"], float(z["min_modulus"])
+
+    import trajectories as rk_traj
+    named = np.array([rk_traj.NAMED_STARTS[k] for k in rk_traj.NAMED_STARTS])
+    starts = np.vstack([named, training_states(n_random, seed)])
+
+    n_steps = int(round(t_end / dt))
+    t = dt * np.arange(1, n_steps + 1)
+    ref = np.empty((n_steps,) + starts.shape)
+    y = starts.copy()
+    for k in range(n_steps):
+        y = rk6.integrate_to(_f, y, dt, H_REF)
+        ref[k] = y
+    norm = np.linalg.norm(ref, axis=2, keepdims=True)     # (n_steps, n, 1)
+
+    rho = np.empty((len(SEEDS), n_steps, len(starts)))
+    for si, s in enumerate(SEEDS):
+        model = OneStepNetwork(q)
+        model.load_state_dict(
+            torch.load(RESULTS / f"one_step_q{q}_seed{s}.pt"))
+        yt = torch.tensor(starts)
+        with torch.no_grad():
+            for k in range(n_steps):
+                yt = model(yt)[:, -1, :]
+                r = (yt.numpy() - ref[k]) / norm[k]
+                rho[si, k] = (r ** 2).mean(axis=1)
+        if verbose:
+            med = np.median(rho[si], axis=1)
+            print(f"  seed {s}: median rho at 1 lap {med[7]:.2e}, "
+                  f"2 laps {med[16]:.2e}, 6 laps {med[-1]:.2e}", flush=True)
+
+    min_modulus = float(norm.min())
+    RESULTS.mkdir(exist_ok=True)
+    np.savez_compressed(cache, starts=starts, t=t, rho=rho,
+                        min_modulus=min_modulus)
+    return starts, t, rho, min_modulus
+
+
 def run_sweep(qs=QS, seeds=SEEDS, dt: float = DT, verbose: bool = True):
     """Train every (stages, seed) pair, score it, save everything under results/.
 
