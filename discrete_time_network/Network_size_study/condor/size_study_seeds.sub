@@ -1,0 +1,21 @@
+# The network-size sweep: one job per (depth, width, seed) from params.txt.
+# Widest/deepest combos are listed first so the slow jobs start earliest.
+universe              = vanilla
+executable            = /data/bfys/gscriven/conda/envs/TE/bin/python
+arguments             = "train_size.py --depth $(depth) --width $(width) --seed $(seed)"
+initialdir            = /data/bfys/gscriven/Van_Der_Pole/discrete_time_network/Network_size_study
+output                = condor/logs/d$(depth)_w$(width)_s$(seed).out
+error                 = condor/logs/d$(depth)_w$(width)_s$(seed).err
+log                   = condor/logs/size_study.log
+should_transfer_files = NO
+getenv                = False
+# One CPU, single-threaded torch: the pool is overwhelmingly 1-CPU slots, and a
+# 4-CPU request matched only 1 of 81 slots (417 slots match at 1 CPU), which is
+# why the first resubmission sat idle. The 8 largest runs (width 256, depth
+# 8-10) peaked at 2303 MB, so 4G carries the rest with headroom.
+environment           = "OMP_NUM_THREADS=1 MKL_NUM_THREADS=1"
+request_cpus          = 1
+request_memory        = 4G
++UseOS                = "el9"
++JobCategory          = "medium"
+queue depth, width, seed from condor/params_seeds.txt
