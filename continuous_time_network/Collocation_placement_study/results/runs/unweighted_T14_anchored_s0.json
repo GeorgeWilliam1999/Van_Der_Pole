@@ -1,0 +1,1 @@
+{"tag": "unweighted_T14_anchored_s0", "arm": "unweighted", "horizon": 14.0, "placement": "anchored", "seed": 0, "width": 50, "depth": 4, "n_collocation": 320, "lbfgs_restarts": 4, "seconds": 12.69, "loss_total": 0.05287539107947074, "loss_start": 2.5021848097817214e-06, "loss_residual": 0.05287288889466096, "rel_l2": 0.787890809082466, "smoke": false}

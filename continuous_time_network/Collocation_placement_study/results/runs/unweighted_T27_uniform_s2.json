@@ -1,0 +1,1 @@
+{"tag": "unweighted_T27_uniform_s2", "arm": "unweighted", "horizon": 27.0, "placement": "uniform", "seed": 2, "width": 50, "depth": 4, "n_collocation": 540, "lbfgs_restarts": 5, "seconds": 17.28, "loss_total": 0.031595705737416435, "loss_start": 3.948262428315534e-06, "loss_residual": 0.031591757474988116, "rel_l2": 0.9100463347962323, "smoke": false}

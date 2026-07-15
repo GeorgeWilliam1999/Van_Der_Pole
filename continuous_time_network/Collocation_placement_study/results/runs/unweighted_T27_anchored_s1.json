@@ -1,0 +1,1 @@
+{"tag": "unweighted_T27_anchored_s1", "arm": "unweighted", "horizon": 27.0, "placement": "anchored", "seed": 1, "width": 50, "depth": 4, "n_collocation": 580, "lbfgs_restarts": 4, "seconds": 16.27, "loss_total": 0.029332346232507116, "loss_start": 5.724781966882713e-07, "loss_residual": 0.02933177375431043, "rel_l2": 0.9011306311370962, "smoke": false}

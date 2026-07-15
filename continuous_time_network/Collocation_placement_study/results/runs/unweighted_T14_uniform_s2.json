@@ -1,0 +1,1 @@
+{"tag": "unweighted_T14_uniform_s2", "arm": "unweighted", "horizon": 14.0, "placement": "uniform", "seed": 2, "width": 50, "depth": 4, "n_collocation": 280, "lbfgs_restarts": 4, "seconds": 10.47, "loss_total": 0.060494274565821834, "loss_start": 7.832115675532662e-06, "loss_residual": 0.060486442450146304, "rel_l2": 0.7874686430572232, "smoke": false}
