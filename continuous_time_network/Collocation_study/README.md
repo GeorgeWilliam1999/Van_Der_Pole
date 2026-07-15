@@ -64,6 +64,8 @@ enters training.
 | `wrapper.sh` | HTCondor executable: `cd`s here, execs the TE conda env's python, single-threaded torch |
 | `collocation.sub` | HTCondor submit file, `queue args from jobs.txt` |
 | `canary.sub` | HTCondor submit file, `queue args from canary_jobs.txt` |
+| `analysis.py` | loaders (this study's `results/runs/`, plus the two density-20 imports from `../Initial_pass` and `../Causal_weighting`), tidy-table builder, integrity checks, `(arm, T, density)` aggregation, and the four figure functions. Pure functions only — nothing runs on import; `analysis.ipynb` is what calls it |
+| `analysis.ipynb` | the density-x-horizon analysis: loads the tidy table, asserts data integrity, prints the full aggregate table (with n/3 completeness flags), makes the four figures, writes `results/summary_analysis.csv`, and a soft-verdict cell reading the two on-record hypotheses (H1 unweighted density-independence, H2 causal density-sensitivity via the between-points loophole) with explicit caveats where the grid is still partial |
 
 ## Outputs, in `results/runs/`
 
@@ -79,6 +81,20 @@ One `.json` + `.npz` + `.pt` per run, tagged `<arm>_T<horizon>_d<density>_s<seed
 A run is skipped if its `.json` already exists (`training.run_one`), and
 `make_jobs.py` only writes `jobs.txt` lines for runs not yet done — an
 interrupted or partially-submitted sweep resumes safely.
+
+## Analysis outputs
+
+Produced by `analysis.ipynb` (via `analysis.py`), tolerant of a partial
+`results/runs/` grid — see the notebook header for the two on-record
+hypotheses this reads against.
+
+| output | produced by | contents |
+|---|---|---|
+| `figures/01_error_vs_density.png` | `analysis.fig_error_vs_density` | rel L2 vs density (log-x, 5/20/80/320), one line per horizon, unweighted vs causal panels; median + min-max whiskers, incomplete cells (n<3/3) as open markers |
+| `figures/02_error_vs_horizon.png` | `analysis.fig_error_vs_horizon` | rel L2 vs horizon T, one line per density, same two panels and marker convention |
+| `figures/03_causal_front_vs_density.png` | `analysis.fig_causal_front_vs_density` | causal arm only: per-seed Adam steps to front arrival (or 60k if budget-exhausted) vs density, per horizon, with certified-wrong runs (front arrived but rel L2 > 0.1) marked |
+| `figures/04_grid_completeness.png` | `analysis.fig_grid_completeness` | heatmap of n_seeds landed per `(arm, T, density)` cell |
+| `results/summary_analysis.csv` | `analysis.aggregate`, written from the notebook | the full `(arm, T, density)` aggregate table: n_seeds, median/min/max rel L2, and (causal only) n_front_arrived, median Adam steps used, n_certified_wrong |
 
 ## Operating it
 
