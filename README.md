@@ -32,8 +32,13 @@ The notebook is the source for the corresponding Notion write-up.
 | [`continuous_time_network/`](continuous_time_network/) | **The paper's first technique (section 3.1), its failure, and its rescue.** The network *is* the trajectory: time in, state out, anchored only at `t = 0`. Two sub-studies: [`Initial_pass/`](continuous_time_network/Initial_pass/) — accurate to one lap, then collapses onto spurious solutions while the loss keeps falling, the paper's own motivation for the second technique, measured; [`Causal_weighting/`](continuous_time_network/Causal_weighting/) — the same experiment with causally weighted residuals (Wang, Sankaran & Perdikaris), which pushes the cliff to two laps and turns the remaining failures from silent to detectable. |
 | [`discrete_time_network/`](discrete_time_network/) | **The paper's second technique (section 3.2).** One network learns a whole implicit Runge–Kutta step (`q = 8` Gauss–Legendre stages, `dt = 0.8`) from *any* starting state on the training rectangle, self-supervised through the scheme's own equations — no trajectory data. The reusable one-step map the rest of the project builds on. |
 
-Still to come (see the Notion to-do list): whole trajectories from the one-step map, the
-learned-Runge-Kutta-weights study, and the data-trained baseline.
+Sub-studies live under their technique's folder: `discrete_time_network/Trajectory_network/`
+(whole trajectories by chaining the one-step map — Route A vs the one-giant-step Route B),
+`discrete_time_network/Network_size_study/` (the width/depth sweep and the selection
+protocol), and `continuous_time_network/Network_size_study/` (the same sweep for the
+continuous-time technique). Still to come (see the Notion to-do list): the
+learned-Runge-Kutta-weights study; `data_trained_baseline/` (what the physics constraint
+buys versus training on reference data) is done and pending the same technique-folder move.
 
 ## Environment
 

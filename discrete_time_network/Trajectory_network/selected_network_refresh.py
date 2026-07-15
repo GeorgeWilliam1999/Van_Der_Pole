@@ -26,14 +26,14 @@ import pandas as pd
 import torch
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE.parent / "discrete_time_network"))
-sys.path.insert(0, str(HERE.parent / "RK_Truth"))
+sys.path.insert(0, str(HERE.parent))
+sys.path.insert(0, str(HERE.parent.parent / "RK_Truth"))
 
 import chained_trajectories as ct                       # noqa: E402
 from evaluation_starts import evaluation_starts         # noqa: E402
 from model import OneStepNetwork                        # noqa: E402
 
-WEIGHTS = (HERE.parent / "discrete_time_network" / "Network_size_study"
+WEIGHTS = (HERE.parent / "Network_size_study"
            / "results" / "runs" / "d04_w032_s9.pt")
 CSV = HERE / "results" / "route_a_selected_network.csv"
 

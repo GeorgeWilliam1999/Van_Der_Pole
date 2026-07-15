@@ -34,8 +34,8 @@ torch.set_default_dtype(torch.float64)
 
 HERE = Path(__file__).resolve().parent
 RESULTS = HERE / "results"
-_DISCRETE = HERE.parent / "discrete_time_network"
-sys.path.insert(0, str(HERE.parent / "RK_Truth"))
+_DISCRETE = HERE.parent
+sys.path.insert(0, str(HERE.parent.parent / "RK_Truth"))
 sys.path.insert(0, str(_DISCRETE))
 
 import rk6                                        # noqa: E402

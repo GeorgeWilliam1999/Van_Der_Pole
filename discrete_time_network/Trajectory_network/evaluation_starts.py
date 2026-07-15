@@ -22,8 +22,8 @@ from pathlib import Path
 import numpy as np
 
 _HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(_HERE.parent / "RK_Truth"))
-sys.path.insert(0, str(_HERE.parent / "discrete_time_network"))
+sys.path.insert(0, str(_HERE.parent.parent / "RK_Truth"))
+sys.path.insert(0, str(_HERE.parent))
 
 import trajectories                              # noqa: E402  (RK_Truth)
 from model import training_states               # noqa: E402  (discrete_time_network)
