@@ -1,0 +1,1 @@
+{"tag": "unweighted_T40_d80_s1", "arm": "unweighted", "horizon": 40.0, "density": 80.0, "seed": 1, "width": 50, "depth": 4, "n_collocation": 3200, "lbfgs_restarts": 5, "seconds": 95.46, "loss_total": 0.02116565934748947, "loss_start": 8.602811016953211e-07, "loss_residual": 0.021164799066387775, "rel_l2": 0.9352101041607579, "smoke": false}

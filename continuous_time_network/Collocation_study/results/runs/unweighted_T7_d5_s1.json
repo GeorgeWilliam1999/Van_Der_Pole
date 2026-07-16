@@ -1,0 +1,1 @@
+{"tag": "unweighted_T7_d5_s1", "arm": "unweighted", "horizon": 7.0, "density": 5.0, "seed": 1, "width": 50, "depth": 4, "n_collocation": 35, "lbfgs_restarts": 6, "seconds": 17.93, "loss_total": 4.500016401378945e-06, "loss_start": 7.835774726117514e-09, "loss_residual": 4.4921806266528275e-06, "rel_l2": 1.1377986009421066, "smoke": false}

@@ -1,0 +1,1 @@
+{"tag": "unweighted_T27_d320_s2", "arm": "unweighted", "horizon": 27.0, "density": 320.0, "seed": 2, "width": 50, "depth": 4, "n_collocation": 8640, "lbfgs_restarts": 6, "seconds": 197.1, "loss_total": 0.031414484936992206, "loss_start": 3.2159146352413136e-06, "loss_residual": 0.03141126902235696, "rel_l2": 0.904157573527099, "smoke": false}

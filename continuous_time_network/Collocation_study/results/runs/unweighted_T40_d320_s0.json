@@ -1,0 +1,1 @@
+{"tag": "unweighted_T40_d320_s0", "arm": "unweighted", "horizon": 40.0, "density": 320.0, "seed": 0, "width": 50, "depth": 4, "n_collocation": 12800, "lbfgs_restarts": 6, "seconds": 260.89, "loss_total": 0.04829104409450393, "loss_start": 5.760312314605886e-07, "loss_residual": 0.04829046806327247, "rel_l2": 2.124284047574658, "smoke": false}

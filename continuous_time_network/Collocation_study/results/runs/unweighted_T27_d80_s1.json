@@ -1,0 +1,1 @@
+{"tag": "unweighted_T27_d80_s1", "arm": "unweighted", "horizon": 27.0, "density": 80.0, "seed": 1, "width": 50, "depth": 4, "n_collocation": 2160, "lbfgs_restarts": 5, "seconds": 47.18, "loss_total": 0.031384669665369, "loss_start": 2.11263659536776e-06, "loss_residual": 0.031382557028773635, "rel_l2": 0.9035185810934214, "smoke": false}

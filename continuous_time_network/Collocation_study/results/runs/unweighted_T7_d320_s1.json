@@ -1,0 +1,1 @@
+{"tag": "unweighted_T7_d320_s1", "arm": "unweighted", "horizon": 7.0, "density": 320.0, "seed": 1, "width": 50, "depth": 4, "n_collocation": 2240, "lbfgs_restarts": 6, "seconds": 59.83, "loss_total": 1.7212963358276497e-06, "loss_start": 4.744392256071142e-09, "loss_residual": 1.7165519435715785e-06, "rel_l2": 0.0002265224842092492, "smoke": false}

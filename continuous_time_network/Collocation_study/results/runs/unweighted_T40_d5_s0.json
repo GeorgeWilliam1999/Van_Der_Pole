@@ -1,0 +1,1 @@
+{"tag": "unweighted_T40_d5_s0", "arm": "unweighted", "horizon": 40.0, "density": 5.0, "seed": 0, "width": 50, "depth": 4, "n_collocation": 200, "lbfgs_restarts": 5, "seconds": 14.53, "loss_total": 0.048269232350653626, "loss_start": 1.657737076306235e-06, "loss_residual": 0.04826757461357732, "rel_l2": 2.141860496377782, "smoke": false}
