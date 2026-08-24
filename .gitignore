@@ -5,3 +5,11 @@ __pycache__/
 
 # trained weights of the size sweep: 95 MB, regenerable from the seeds (train_size.py)
 discrete_time_network/Network_size_study/results/runs/*.pt
+
+# LaTeX build artifacts
+vdp_minipaper/*.aux
+vdp_minipaper/*.bbl
+vdp_minipaper/*.blg
+vdp_minipaper/*.log
+vdp_minipaper/*.out
+vdp_minipaper/*.toc
