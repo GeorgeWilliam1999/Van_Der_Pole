@@ -1,0 +1,1 @@
+{"tag": "sup_T27_d4_w64_dens100_s1", "depth": 4, "width": 64, "density": 100.0, "seed": 1, "n_parameters": 12738, "rel_l2": 0.0005698375960959569, "rho_mse": 1.6977369454723164e-07, "seconds": 2005.6, "smoke": false, "mse_adam_end": 2.4041426288235583e-06, "mse_final": 6.7268015630582e-07, "adam_steps_used": 60000, "lbfgs_restarts": 3, "n_data": 2701}
