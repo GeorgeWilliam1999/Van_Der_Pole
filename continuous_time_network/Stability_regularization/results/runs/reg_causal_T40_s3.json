@@ -1,0 +1,1 @@
+{"tag": "reg_causal_T40_s3", "arm": "reg_causal", "horizon": 40.0, "seed": 3, "rel_l2": 3.9515287136173383, "rho_mse": 8.827419050935859, "success_015": false, "frac_near_origin": 0.0, "max_modulus": 9.412384924831592, "seconds": 1194.3, "smoke": false, "loss_total": 0.0019783837421488365, "lbfgs_restarts": 6, "adam_steps_used": 60000, "front_arrived": false}

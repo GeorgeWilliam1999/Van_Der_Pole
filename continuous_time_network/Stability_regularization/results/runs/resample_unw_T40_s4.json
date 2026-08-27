@@ -1,0 +1,1 @@
+{"tag": "resample_unw_T40_s4", "arm": "resample_unw", "horizon": 40.0, "seed": 4, "rel_l2": 0.9344033341593888, "rho_mse": 0.43379963369069574, "success_015": false, "frac_near_origin": 0.8160459885028742, "max_modulus": 2.017799876839249, "seconds": 2399.6, "smoke": false, "loss_total": 0.02116337459185601, "lbfgs_restarts": 3, "adam_steps_used": 60000}

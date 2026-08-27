@@ -1,0 +1,1 @@
+{"tag": "resample_unw_T27_s6", "arm": "resample_unw", "horizon": 27.0, "seed": 6, "rel_l2": 0.9021603726335933, "rho_mse": 0.402953080172315, "success_015": false, "frac_near_origin": 0.728619029988893, "max_modulus": 1.997298791549093, "seconds": 855.4, "smoke": false, "loss_total": 0.03124506074976032, "lbfgs_restarts": 3, "adam_steps_used": 60000}

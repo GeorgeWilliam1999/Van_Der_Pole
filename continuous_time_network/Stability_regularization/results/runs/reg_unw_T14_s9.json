@@ -1,0 +1,1 @@
+{"tag": "reg_unw_T14_s9", "arm": "reg_unw", "horizon": 14.0, "seed": 9, "rel_l2": 0.00029911416277471185, "rho_mse": 3.9966682756995126e-08, "success_015": true, "frac_near_origin": 0.0, "max_modulus": 2.8299971573121523, "seconds": 812.3, "smoke": false, "loss_total": 2.7569875799098694e-07, "lbfgs_restarts": 6, "adam_steps_used": 60000}

@@ -1,0 +1,1 @@
+{"tag": "base_unw_T14_s6", "arm": "base_unw", "horizon": 14.0, "seed": 6, "rel_l2": 0.840067286882311, "rho_mse": 0.35008729580485437, "success_015": false, "frac_near_origin": 0.6995003568879372, "max_modulus": 2.8291118812015204, "seconds": 472.7, "smoke": false, "loss_total": 1.7506313751873825e-07, "lbfgs_restarts": 4, "adam_steps_used": 60000}
