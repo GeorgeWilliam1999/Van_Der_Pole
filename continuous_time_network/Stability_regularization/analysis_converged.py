@@ -32,9 +32,13 @@ import json
 import sys
 from pathlib import Path
 
+import warnings
+
 import matplotlib
 
 matplotlib.use("Agg")
+warnings.filterwarnings("ignore", category=RuntimeWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -78,8 +82,19 @@ def load_runs(folder: Path = CONV) -> pd.DataFrame:
 
 
 def load_arrays(tag: str, folder: Path = CONV) -> dict:
+    """The saved arrays; runs logged before the telemetry gained the plain,
+    pseudo and tau fields get them synthesised (plain = ic + res, else nan)."""
     with np.load(folder / f"{tag}.npz") as d:
-        return {k: d[k] for k in d.files}
+        a = {k: d[k] for k in d.files}
+    for phase in ("adam", "lbfgs"):
+        if f"{phase}_epoch" not in a:
+            continue
+        if f"{phase}_plain" not in a:
+            a[f"{phase}_plain"] = a[f"{phase}_ic"] + a[f"{phase}_res"]
+        for key in ("pseudo", "tau"):
+            if f"{phase}_{key}" not in a:
+                a[f"{phase}_{key}"] = np.full_like(a[f"{phase}_epoch"], np.nan, dtype=float)
+    return a
 
 
 def rho(y_net: np.ndarray, y_ref: np.ndarray) -> np.ndarray:
