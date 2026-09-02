@@ -1,0 +1,13 @@
+universe                = vanilla
+executable              = wrapper_extend.sh
+arguments               = $(args)
+output                  = condor/logs_extend/$(Cluster).$(Process).out
+error                   = condor/logs_extend/$(Cluster).$(Process).err
+log                     = condor/logs_extend/$(Cluster).log
+request_cpus            = 1
+request_memory          = 4096
+should_transfer_files   = NO
+getenv                  = False
++UseOS                  = "el9"
++JobCategory            = "medium"
+queue args from jobs_converged.txt

@@ -56,6 +56,7 @@ under a larger cap and re-polishes.
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import sys
 import time
@@ -72,8 +73,30 @@ from stability_reg import (                    # noqa: E402
     derivatives, regulariser)
 
 ARMS = ("base_unw", "base_causal", "reg_unw", "reg_causal", "resample_unw",
-        "reg_always_unw")
+        "reg_always_unw", "reg_resample_unw", "pseudo_unw")
 SEEDS = tuple(range(10))
+
+# Arm 8, pseudo-time stepping (Wang, Koohy, Lu & Perdikaris, arXiv:2604.23528,
+# Algorithm 1), unweighted, with the collocation points redrawn every epoch as
+# their method requires. The residual loss is replaced by
+#     mean_i || (y_theta(t_i) - y_prev(t_i)) / tau + r_theta(t_i) ||^2
+# with y_prev the previous iterate's prediction at the same fresh points, held
+# fixed. tau is adapted from the finite-difference surrogate of their
+# eqs 2.55-2.63, implemented as in their reference code (jaxpi2,
+# models.compute_pts_weights): in w = 1/tau, w_hat = gamma * ||dr|| / ||du||
+# with norms over the fresh points between the previous and current iterate,
+# momentum-smoothed, clipped to [1e-2, 100]; gamma is the cosine shrink factor
+# driven by the decades of plain-residual reduction since the start (paper:
+# s_start = 2, s_end = 6, gamma_min = 0.1). Initial tau = 1; first update at
+# epoch 100, then every 1,000 (their update_schedule); momentum 0.9 (their
+# pseudo_time.momentum). The polish is on the plain loss, as for every arm.
+PSEUDO_TAU0 = 1.0
+PSEUDO_FIRST = 100
+PSEUDO_UPDATE = 1_000
+PSEUDO_MOMENTUM = 0.9
+PSEUDO_EPS = 1e-8
+PSEUDO_W_MIN, PSEUDO_W_MAX = 1e-2, 100.0
+PSEUDO_S_START, PSEUDO_S_END, PSEUDO_GAMMA_MIN = 2.0, 6.0, 0.1
 
 ADAM_LR = 1e-3
 ADAM_CAP = 200_000
@@ -99,22 +122,31 @@ def reg_coefficient(arm: str, epoch: int) -> float:
     return 0.0
 
 
-def loss_terms(model, t_c, y0, arm, level, dt, c, weighted):
+def loss_terms(model, t_c, y0, arm, level, dt, c, weighted, pseudo=None):
     """Every term of the objective, separately, plus the assembled objective.
 
     weighted: apply the causal weights (Adam phase of a causal arm). The
-    polish always passes False. Returns (objective, terms) with float
-    tensors: ic, res (plain residual mean), res_w (weighted residual, when
-    weighted), reg (raw regulariser, logged for every regularised arm even
-    when its coefficient is zero), min_w, awake (when weighted).
+    polish always passes False. pseudo: (y_prev, tau) for the pseudo-time
+    arm's Adam phase; the relaxed term then replaces the plain residual in
+    the objective. Returns (objective, terms, y, dy) with float tensors:
+    ic, res (plain residual mean), res_w (weighted residual, when weighted),
+    reg (raw regulariser, logged for every regularised arm even when its
+    coefficient is zero), min_w, awake (when weighted), pseudo (the relaxed
+    residual term, when pseudo).
     """
     y, dy = derivatives(model, t_c)
-    r2 = (dy - capacity.f_torch(y)) ** 2
+    r = dy - capacity.f_torch(y)
+    r2 = r ** 2
     ic = ((model(torch.zeros(1, 1)) - y0) ** 2).mean()
     res = r2.mean()
     terms = dict(ic=ic, res=res)
     objective = ic
-    if weighted:
+    if pseudo is not None:
+        y_prev, tau = pseudo
+        relaxed = (((y - y_prev) / tau + r) ** 2).mean()
+        terms["pseudo"] = relaxed
+        objective = objective + relaxed
+    elif weighted:
         r2_pt = r2.sum(dim=1).detach()
         accumulated = torch.cumsum(r2_pt * dt, dim=0) - r2_pt * dt
         w = torch.exp(-capacity.EPSILONS[level] * accumulated)
@@ -130,7 +162,7 @@ def loss_terms(model, t_c, y0, arm, level, dt, c, weighted):
         terms["reg"] = reg
         if c > 0.0:
             objective = objective + c * reg
-    return objective, terms
+    return objective, terms, y, r
 
 
 def grad_norm(model) -> float:
@@ -147,24 +179,28 @@ def rel_l2_now(model, t_ref_t, y_ref) -> float:
     return float(np.linalg.norm(y_net - y_ref) / np.linalg.norm(y_ref))
 
 
-TELEMETRY_KEYS = ("epoch", "objective", "ic", "res", "res_w", "reg", "coef",
-                  "min_w", "awake", "grad_norm", "rel_l2", "level")
+TELEMETRY_KEYS = ("epoch", "objective", "plain", "ic", "res", "res_w", "reg",
+                  "coef", "min_w", "awake", "pseudo", "tau", "grad_norm",
+                  "rel_l2", "level")
 
 
-def _row(epoch, objective, terms, c, gnorm, rel, level) -> dict:
+def _row(epoch, objective, terms, c, gnorm, rel, level, tau=float("nan")):
     g = lambda k: float(terms[k].detach()) if k in terms else float("nan")  # noqa: E731
-    return dict(epoch=epoch, objective=float(objective), ic=g("ic"),
-                res=g("res"), res_w=g("res_w"), reg=g("reg"), coef=c,
-                min_w=g("min_w"), awake=g("awake"), grad_norm=gnorm,
-                rel_l2=rel, level=level)
+    return dict(epoch=epoch, objective=float(objective), plain=g("ic") + g("res"),
+                ic=g("ic"), res=g("res"), res_w=g("res_w"), reg=g("reg"),
+                coef=c, min_w=g("min_w"), awake=g("awake"), pseudo=g("pseudo"),
+                tau=tau, grad_norm=gnorm, rel_l2=rel, level=level)
 
 
-def plateaued(telemetry: list, window_start: int, tol: float) -> bool:
-    """Has the objective improved by less than tol over the trailing window?
+def plateaued(telemetry: list, window_start: int, tol: float,
+              key: str = "objective") -> bool:
+    """Has `key` improved by less than tol over the trailing window?
 
     Compares the median of the last four log rows with the median of the
     four rows one window earlier. Needs a full window since window_start
-    (the last annealing-level change for causal arms, else 0).
+    (the last annealing-level change for causal arms, else 0). The
+    pseudo-time arm is judged on the plain loss (its objective's scale moves
+    with tau); every other arm on its objective.
     """
     now = telemetry[-1]["epoch"]
     if now - window_start < PLATEAU_WINDOW:
@@ -174,9 +210,19 @@ def plateaued(telemetry: list, window_start: int, tol: float) -> bool:
     latest = telemetry[-4:]
     if len(earlier) < 4 or earlier[0]["epoch"] < window_start:
         return False
-    old = float(np.median([r["objective"] for r in earlier]))
-    new = float(np.median([r["objective"] for r in latest]))
+    old = float(np.median([r[key] for r in earlier]))
+    new = float(np.median([r[key] for r in latest]))
     return (old - new) < tol * old
+
+
+def shrink_factor(loss0: float, loss_now: float) -> float:
+    """Wang et al. eq. 2.67-2.68: cosine decay of the pseudo-time step with
+    the decades of plain-residual-loss reduction since the start."""
+    decades = np.log10((loss0 + PSEUDO_EPS) / (loss_now + PSEUDO_EPS))
+    p = np.clip((decades - PSEUDO_S_START) / (PSEUDO_S_END - PSEUDO_S_START),
+                0.0, 1.0)
+    return float(PSEUDO_GAMMA_MIN + (1.0 - PSEUDO_GAMMA_MIN)
+                 * (1.0 + np.cos(np.pi * p)) / 2.0)
 
 
 # ---------------------------------------------------------- the Adam phase
@@ -191,8 +237,9 @@ def adam_phase(arm, horizon, seed, state, t_ref_t, y_ref, adam_cap, tol, out):
     model, opt = state["model"], state["opt"]
     y0 = torch.tensor([list(START)])
     causal = arm.endswith("causal")
-    resample = arm.startswith("resample")
+    resample = "resample" in arm or arm == "pseudo_unw"
     regularised = arm.startswith("reg")
+    pseudo = arm == "pseudo_unw"
     tag = state["tag"]
 
     t_np = capacity.collocation_times(horizon, seed)
@@ -201,6 +248,16 @@ def adam_phase(arm, horizon, seed, state, t_ref_t, y_ref, adam_cap, tol, out):
     draw = np.random.default_rng(seed * 100_003)
     if state["draw_state"] is not None:
         draw.bit_generator.state = state["draw_state"]
+
+    extra = state["extra"]
+    if pseudo:
+        # the previous iterate, held fixed; on a resume it restarts as a copy
+        # of the current weights (one-step discontinuity, recorded)
+        prev_model = copy.deepcopy(model)
+        for p in prev_model.parameters():
+            p.requires_grad_(False)
+        tau = extra.get("tau", PSEUDO_TAU0)
+        loss0 = extra.get("loss0")
 
     telemetry = state["telemetry"]
     level, window_start = state["level"], state["window_start"]
@@ -213,18 +270,49 @@ def adam_phase(arm, horizon, seed, state, t_ref_t, y_ref, adam_cap, tol, out):
             t_c = torch.tensor(fresh[:, None])
         c = reg_coefficient(arm, epoch)
 
+        pseudo_args = None
+        if pseudo:
+            with torch.no_grad():
+                y_prev = prev_model(t_c)
+            pseudo_args = (y_prev, tau)
         opt.zero_grad()
-        objective, terms = loss_terms(model, t_c, y0, arm, level, dt, c,
-                                      weighted=causal)
+        objective, terms, y_now, r_now = loss_terms(
+            model, t_c, y0, arm, level, dt, c, weighted=causal,
+            pseudo=pseudo_args)
         objective.backward()
+        if pseudo:
+            if loss0 is None:
+                loss0 = float(terms["res"].detach())
+            if epoch >= PSEUDO_FIRST and (epoch - PSEUDO_FIRST) % PSEUDO_UPDATE == 0:
+                # The reference code (jaxpi2 models.compute_pts_weights) works
+                # in w = 1/tau: w_hat = gamma * ||dr|| / (||du|| + 1e-8), norms
+                # over the fresh points, previous -> current iterate; momentum
+                # smoothing; clipped to [1e-2, 100]. gamma is the cosine shrink
+                # factor driven by the decades of plain-residual reduction,
+                # which the code applies to w (so the damping fades as the
+                # residual converges; the paper's text says tau shrinks - the
+                # code and its documentation say the opposite, and we follow
+                # the code that produced the published numbers).
+                _, dy_prev = derivatives(prev_model, t_c)
+                r_prev = (dy_prev - capacity.f_torch(prev_model(t_c))).detach()
+                d_u = float((y_now.detach() - y_prev).norm())
+                d_r = float((r_now.detach() - r_prev).norm())
+                gamma = shrink_factor(loss0, float(terms["res"].detach()))
+                w_hat = gamma * d_r / (d_u + PSEUDO_EPS)
+                w = PSEUDO_MOMENTUM * (1.0 / tau) + (1.0 - PSEUDO_MOMENTUM) * w_hat
+                w = float(np.clip(w, PSEUDO_W_MIN, PSEUDO_W_MAX))
+                tau = 1.0 / w
+            prev_model.load_state_dict(model.state_dict())   # theta_k, pre-step
         already_logged = bool(telemetry) and telemetry[-1]["epoch"] == epoch
         if epoch % LOG_EVERY == 0 and not already_logged:
             telemetry.append(_row(epoch, objective.item(), terms, c,
                                   grad_norm(model),
-                                  rel_l2_now(model, t_ref_t, y_ref), level))
+                                  rel_l2_now(model, t_ref_t, y_ref), level,
+                                  tau=tau if pseudo else float("nan")))
             eligible = (epoch >= MIN_ADAM
                         and (c == 0.0 or arm == "reg_always_unw"))
-            if eligible and plateaued(telemetry, window_start, tol):
+            key = "plain" if pseudo else "objective"
+            if eligible and plateaued(telemetry, window_start, tol, key):
                 exit_reason = "plateau"
                 opt.zero_grad()
                 break
@@ -241,20 +329,30 @@ def adam_phase(arm, horizon, seed, state, t_ref_t, y_ref, adam_cap, tol, out):
             level += 1
             window_start = epoch
         if epoch % CKPT_EVERY == 0:
+            if pseudo:
+                extra.update(tau=tau, loss0=loss0)
             state.update(epoch=epoch, level=level, window_start=window_start,
                          draw_state=draw.bit_generator.state)
             save_state(state, out / f"{tag}_adam.pt")
 
     if not telemetry or telemetry[-1]["epoch"] != epoch:
         c = reg_coefficient(arm, epoch)
+        pseudo_args = None
+        if pseudo:
+            with torch.no_grad():
+                y_prev = prev_model(t_c)
+            pseudo_args = (y_prev, tau)
         opt.zero_grad()
-        objective, terms = loss_terms(model, t_c, y0, arm, level, dt, c,
-                                      weighted=causal)
+        objective, terms, _, _ = loss_terms(model, t_c, y0, arm, level, dt, c,
+                                            weighted=causal, pseudo=pseudo_args)
         objective.backward()
         telemetry.append(_row(epoch, objective.item(), terms, c,
                               grad_norm(model),
-                              rel_l2_now(model, t_ref_t, y_ref), level))
+                              rel_l2_now(model, t_ref_t, y_ref), level,
+                              tau=tau if pseudo else float("nan")))
         opt.zero_grad()
+    if pseudo:
+        extra.update(tau=tau, loss0=loss0)
     state.update(epoch=epoch, level=level, window_start=window_start,
                  draw_state=draw.bit_generator.state, adam_exit=exit_reason)
     save_state(state, out / f"{tag}_adam.pt")
@@ -276,8 +374,8 @@ def lbfgs_polish(arm, horizon, seed, model, t_ref_t, y_ref, lbfgs_cap):
 
     def closure():
         opt.zero_grad()
-        objective, _ = loss_terms(model, t_c, y0, arm, 0, None, c,
-                                  weighted=False)
+        objective, _, _, _ = loss_terms(model, t_c, y0, arm, 0, None, c,
+                                        weighted=False)
         objective.backward()
         return objective
 
@@ -285,8 +383,8 @@ def lbfgs_polish(arm, horizon, seed, model, t_ref_t, y_ref, lbfgs_cap):
     for outer in range(lbfgs_cap):
         opt.step(closure)
         opt.zero_grad()
-        objective, terms = loss_terms(model, t_c, y0, arm, 0, None, c,
-                                      weighted=False)
+        objective, terms, _, _ = loss_terms(model, t_c, y0, arm, 0, None, c,
+                                            weighted=False)
         objective.backward()
         total = objective.item()
         rows.append(_row(outer, total, terms, c, grad_norm(model),
@@ -313,7 +411,8 @@ def save_state(state: dict, path: Path) -> None:
                     telemetry=state["telemetry"],
                     front_arrived=state["front_arrived"],
                     adam_exit=state.get("adam_exit"),
-                    extensions=state.get("extensions", 0)), path)
+                    extensions=state.get("extensions", 0),
+                    extra=state.get("extra", {})), path)
 
 
 def fresh_state(arm, horizon, seed, tag) -> dict:
@@ -322,7 +421,7 @@ def fresh_state(arm, horizon, seed, tag) -> dict:
     opt = torch.optim.Adam(model.parameters(), lr=ADAM_LR)
     return dict(tag=tag, model=model, opt=opt, epoch=0, level=0,
                 window_start=0, draw_state=None, telemetry=[],
-                front_arrived=False, extensions=0)
+                front_arrived=False, extensions=0, extra={})
 
 
 def load_state(path: Path, arm, horizon, seed, tag) -> dict:
@@ -335,7 +434,8 @@ def load_state(path: Path, arm, horizon, seed, tag) -> dict:
                  draw_state=blob["draw_state"], telemetry=blob["telemetry"],
                  front_arrived=blob["front_arrived"],
                  adam_exit=blob.get("adam_exit"),
-                 extensions=blob.get("extensions", 0))
+                 extensions=blob.get("extensions", 0),
+                 extra=blob.get("extra", {}))
     return state
 
 
@@ -347,8 +447,11 @@ def residual_profile(model, t_ref_t) -> np.ndarray:
 
 # ----------------------------------------------------------------- one run
 def run_one(arm: str, horizon: float, seed: int, adam_cap=ADAM_CAP,
-            lbfgs_cap=LBFGS_CAP, tol=PLATEAU_TOL, extend=False,
-            out=RESULTS) -> dict:
+            lbfgs_cap=LBFGS_CAP, tol=PLATEAU_TOL, min_adam=None,
+            extend=False, out=RESULTS) -> dict:
+    global MIN_ADAM
+    if min_adam is not None:
+        MIN_ADAM = min_adam
     tag = f"{arm}_T{horizon:g}_s{seed}"
     out.mkdir(parents=True, exist_ok=True)
     marker = out / f"{tag}.json"
@@ -397,6 +500,7 @@ def run_one(arm: str, horizon: float, seed: int, adam_cap=ADAM_CAP,
                loss_total=last["objective"], loss_ic=last["ic"],
                loss_res=last["res"], loss_reg=last["reg"],
                final_grad_norm=last["grad_norm"],
+               tau_final=state["extra"].get("tau", float("nan")),
                extensions=state["extensions"],
                adam_seconds=round(adam_seconds, 1),
                lbfgs_seconds=round(lbfgs_seconds, 1))
@@ -424,6 +528,8 @@ if __name__ == "__main__":
     p.add_argument("--adam-cap", type=int, default=ADAM_CAP)
     p.add_argument("--lbfgs-cap", type=int, default=LBFGS_CAP)
     p.add_argument("--plateau-tol", type=float, default=PLATEAU_TOL)
+    p.add_argument("--min-adam", type=int, default=None,
+                   help="earliest epoch at which the plateau test may fire")
     p.add_argument("--extend", action="store_true",
                    help="continue a finished run from its pre-polish state "
                         "under the given caps and tolerance, then re-polish")
@@ -443,7 +549,8 @@ if __name__ == "__main__":
                 out=HERE / "results" / "smoke")
     elif a.arm is not None:
         run_one(a.arm, a.horizon, a.seed, adam_cap=a.adam_cap,
-                lbfgs_cap=a.lbfgs_cap, tol=a.plateau_tol, extend=a.extend)
+                lbfgs_cap=a.lbfgs_cap, tol=a.plateau_tol,
+                min_adam=a.min_adam, extend=a.extend)
     else:
         for arm in ARMS:
             for horizon in HORIZONS:

@@ -1,0 +1,13 @@
+universe                = vanilla
+executable              = wrapper_new_arms.sh
+arguments               = $(args)
+output                  = condor/logs_new_arms/$(Cluster).$(Process).out
+error                   = condor/logs_new_arms/$(Cluster).$(Process).err
+log                     = condor/logs_new_arms/$(Cluster).log
+request_cpus            = 1
+request_memory          = 4096
+should_transfer_files   = NO
+getenv                  = False
++UseOS                  = "el9"
++JobCategory            = "medium"
+queue args from jobs_new_arms.txt
