@@ -13,3 +13,7 @@ vdp_minipaper/*.blg
 vdp_minipaper/*.log
 vdp_minipaper/*.out
 vdp_minipaper/*.toc
+
+# stability study: weights and Adam states, ~60 MB, regenerable from the seeds (stability_converged.py)
+continuous_time_network/Stability_regularization/results/converged/*.pt
+continuous_time_network/Stability_regularization/results/converged_wave1/
