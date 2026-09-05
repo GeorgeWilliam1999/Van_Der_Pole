@@ -102,6 +102,7 @@ regulariser on, or adding resampling to it, changes nothing at T ≥ 27.
 | `wrapper_new_arms.sh` / `new_arms.sub` / `jobs_new_arms.txt` | arms 7–8 under the strict rule |
 | `analysis_converged.py` | loaders, the failure classifier, tables and figures for the converged set (about 7 min) → `results/converged_summary.csv`, `results/converged_runs.csv`, `results/before_after.csv`, `figures/c01…c07` |
 | `analysis_converged.ipynb` | loads those outputs with the narrative; the source for the write-up |
+| `wrapper_axes.sh` / `axes.sub` / `jobs_axes.txt` | the axes study (below): 240 jobs, strict protocol, `--density` and `--out results/axes` |
 | `theory.md` | the theory section: the mechanism, the three papers, what each fix prices |
 
 Per run in `results/converged/`: `<tag>.json` (metrics + convergence record,
@@ -112,3 +113,27 @@ untracked (about 60 MB, regenerable from the seeds).
 
 Notion: to-do 3c95d544-b9d9-81c2 holds the plan, the dated worklog and the
 write-up spec.
+
+## The axes study (2026-09-05, in flight)
+
+Plan agreed with George: with the eight-arm verdict in hand, measure how the
+one working fix and the two controls respond to the resources a user would
+reach for. Same harness, same strict protocol (Adam to at least 60k epochs,
+plateau tolerance 1e-4, polish cap 60), seeds 0-9, three arms: `pseudo_unw`
+(the subject), `base_unw` (the plain baseline) and `reg_resample_unw` (the
+published regulariser protocol, as the control).
+
+| axis | grid | runs | question |
+|---|---|---|---|
+| A. collocation density | 80 and 320 points per unit time, on top of the existing 20, at T = 14, 27, 40 | 180 | does density help the fix or only raise the cost? (`../Collocation_study`, 5 to 320, predates every fix and saw only parking) |
+| C. horizon | T = 67 and 100 (10 and 15 periods) at density 20 | 60 | where is the fix's own wall, and does its failure mode change? |
+
+`stability_converged.py` gained `--density` (default 20; other values add
+`_d<density>` to the run tag and a `density` field to the json) and `--out`.
+The density is applied by setting `capacity.PER_UNIT` before the collocation
+set is built, so the fixed set, the per-epoch fresh draw and the polish all
+use it. Outputs go to `results/axes/` so the 240-run set in
+`results/converged/` stays frozen. Readouts as for the converged set, plus
+cost per run (`adam_epochs`, `adam_seconds`, `lbfgs_seconds`). Analysis
+notebook to follow when the cluster drains.
+

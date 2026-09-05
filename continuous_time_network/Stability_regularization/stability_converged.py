@@ -111,6 +111,7 @@ LBFGS_CAP = 20
 LBFGS_ITERS = 200
 
 RESULTS = HERE / "results" / "converged"
+DENSITY_DEFAULT = 20.0                 # the density of every run before the axes study
 
 
 # ----------------------------------------------------------------- the loss
@@ -448,11 +449,17 @@ def residual_profile(model, t_ref_t) -> np.ndarray:
 # ----------------------------------------------------------------- one run
 def run_one(arm: str, horizon: float, seed: int, adam_cap=ADAM_CAP,
             lbfgs_cap=LBFGS_CAP, tol=PLATEAU_TOL, min_adam=None,
-            extend=False, out=RESULTS) -> dict:
+            extend=False, out=RESULTS, density=DENSITY_DEFAULT) -> dict:
     global MIN_ADAM
     if min_adam is not None:
         MIN_ADAM = min_adam
+    # Collocation density (points per unit time). capacity.collocation_times
+    # and the per-epoch fresh draw (n = len of that set) both read this module
+    # constant at call time, so setting it here changes both consistently.
+    capacity.PER_UNIT = float(density)
     tag = f"{arm}_T{horizon:g}_s{seed}"
+    if float(density) != DENSITY_DEFAULT:
+        tag += f"_d{density:g}"           # the 240-run set keeps its old tags
     out.mkdir(parents=True, exist_ok=True)
     marker = out / f"{tag}.json"
     ckpt = out / f"{tag}_adam.pt"
@@ -501,6 +508,7 @@ def run_one(arm: str, horizon: float, seed: int, adam_cap=ADAM_CAP,
                loss_res=last["res"], loss_reg=last["reg"],
                final_grad_norm=last["grad_norm"],
                tau_final=state["extra"].get("tau", float("nan")),
+               density=float(density),
                extensions=state["extensions"],
                adam_seconds=round(adam_seconds, 1),
                lbfgs_seconds=round(lbfgs_seconds, 1))
@@ -535,6 +543,13 @@ if __name__ == "__main__":
                         "under the given caps and tolerance, then re-polish")
     p.add_argument("--smoke", action="store_true",
                    help="tiny caps, output to results/smoke/")
+    p.add_argument("--density", type=float, default=DENSITY_DEFAULT,
+                   help="collocation points per unit time (default 20, the "
+                        "value of every run before the axes study; other "
+                        "values add _d<density> to the run tag)")
+    p.add_argument("--out", type=Path, default=None,
+                   help="output folder (default results/converged/; the axes "
+                        "study writes to results/axes/)")
     p.add_argument("--list", action="store_true",
                    help="print one 'arm horizon seed' line per run")
     a = p.parse_args()
@@ -546,11 +561,13 @@ if __name__ == "__main__":
     elif a.smoke:
         MIN_ADAM, PLATEAU_WINDOW, CKPT_EVERY = 500, 500, 400
         run_one(a.arm, a.horizon, a.seed, adam_cap=1_500, lbfgs_cap=2,
-                out=HERE / "results" / "smoke")
+                out=HERE / "results" / "smoke", density=a.density)
     elif a.arm is not None:
         run_one(a.arm, a.horizon, a.seed, adam_cap=a.adam_cap,
                 lbfgs_cap=a.lbfgs_cap, tol=a.plateau_tol,
-                min_adam=a.min_adam, extend=a.extend)
+                min_adam=a.min_adam, extend=a.extend,
+                out=a.out if a.out is not None else RESULTS,
+                density=a.density)
     else:
         for arm in ARMS:
             for horizon in HORIZONS:
