@@ -114,7 +114,7 @@ untracked (about 60 MB, regenerable from the seeds).
 Notion: to-do 3c95d544-b9d9-81c2 holds the plan, the dated worklog and the
 write-up spec.
 
-## The axes study (2026-09-05, in flight)
+## The axes study (2026-09-05, complete: 240 runs, cluster 5781119)
 
 Plan agreed with George: with the eight-arm verdict in hand, measure how the
 one working fix and the two controls respond to the resources a user would
@@ -134,6 +134,11 @@ The density is applied by setting `capacity.PER_UNIT` before the collocation
 set is built, so the fixed set, the per-epoch fresh draw and the polish all
 use it. Outputs go to `results/axes/` so the 240-run set in
 `results/converged/` stays frozen. Readouts as for the converged set, plus
-cost per run (`adam_epochs`, `adam_seconds`, `lbfgs_seconds`). Analysis
-notebook to follow when the cluster drains.
+cost per run (`adam_epochs`, `adam_seconds`, `lbfgs_seconds`). `analysis_axes.py` writes `results/axes_summary.csv`, `results/axes_runs.csv` and
+figures `a01`-`a06`; `analysis_axes.ipynb` carries the reading. Headline: density lifts
+pseudo-time stepping at four periods (8, 9, 10 of 10 at densities 20, 80, 320) but not at
+six (7, 5, 8 of 10); its own wall at density 20 lies between six and ten periods (1/10 at
+T = 67, 0/10 at T = 100), the failures being late parks; every parked run with a sampled
+transition layer has loss x T = 0.85 (0.84 to 0.90) from T = 27 to 100 at every density,
+the 1/T price of theory.md section 3. Notion write-up: 3d25d544-b9d9-81fe.
 
