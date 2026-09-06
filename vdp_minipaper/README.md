@@ -26,14 +26,15 @@ five dry footnotes. Results statements remain neutral throughout. A fourth
 pass the same day removed all remaining em-dashes and residual stock
 phrasing from the prose (verified: numeric content byte-identical to the
 previous revision), and folded in George's own edits (\tableofcontents,
-plain author line). Now 31 pages.
+plain author line). Now 31 pages. 2026-08-19 fifth pass added the classical explicit RK6 versus implicit Gauss–Legendre comparison (Figures 4–5, Table 2); 35 pages. **2026-09-06 sixth pass: the failure study folded in** (four new subsections at the end of the continuous-time route: the supervised control, the family of spurious solutions and its 1/T price, eight objectives trained to convergence, density and horizon for pseudo-time stepping; 11 new figures, two new tables, three new references; abstract, contributions, diagnosis, density, route summary, discussion, future work and conclusion revised to match). Every pre-existing number was re-verified against the repository result files that day (all match to the printed precision; figures byte-identical to their committed sources) and the new numbers trace to the Notion write-up 3d25d544-b9d9-81fe and commits c00c312 / e56b168 / b4ce164. Now 48 pages. George's steer of the same day: this document is the van der Pol thesis chapter, to be condensed into a paper later, so nothing was trimmed.
 
 ## Contents
 
 - `main.tex` — the paper (single file).
-- `references.bib` — 9 entries.
-- `figures/` — 24 PNGs, copied from the study `figures/` folders of the repository
-  at state `981bdeb` (the same figures the joint Notion record pins by commit).
+- `references.bib` — 12 entries.
+- `figures/` — 37 PNGs, copied from the study `figures/` folders of the repository
+  (24 at state `981bdeb`, the classical pair at `dacac09`, and the 11 failure-study figures
+  `fig_control_*`, `fig_arms_*`, `fig_axes_*` from commits `b4ce164`, `c00c312` and `e56b168`).
 
 ## What this revision covers (2026-07-16, superseding the 2026-07-13 draft)
 

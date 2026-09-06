@@ -38,7 +38,7 @@ on horizons up to one period of the limit cycle ($3.8\times10^{-5}$ to
 $6.6\times10^{-4}$ relative $L_2$ error). Beyond one period it fails
 structurally: every seed collapses onto a spurious solution of the
 differential equation while the training loss converges, so the failure is
-silent. Across 733 training runs, no resource changes where this happens.
+silent. Across 733 training runs under the original optimiser protocol, no resource changes where this happens.
 Causal weighting of the residuals, the strongest loss-level modification
 available, moves the failure from one period out to two at a cost that
 grows faster than linearly. A four-fold extension of the optimisation
@@ -50,7 +50,7 @@ targeted re-placement of the collocation points changes nothing. What does
 order the outcomes is the starting state: at two periods the causally
 weighted formulation reaches better than 1\% error for 12.7\% of the
 architecture and start combinations tested, with the successes
-concentrated on the outer starts, and at four periods for none. The
+concentrated on the outer starts, and at four periods for none. A supervised control then locates the failure: the same networks fit four periods from reference data at a few times $10^{-4}$, so the residual objective, not the network or the optimiser, is what fails. I show why: for an autonomous system every trajectory of the flow satisfies the equation exactly, so a candidate that follows the truth and then splices onto another trajectory, the fixed point being the cheapest, has zero residual at every point of a fixed collocation set and a price of order $1/T$ under resampling. Eight variants of the objective trained to demonstrated convergence, ten seeds each at two, four and six periods, bear this out: every fix works at two periods; past two, every variant of the published fixed-point regulariser converges onto a spliced off-loop trajectory with a loss below $10^{-4}$, and only pseudo-time stepping succeeds, in 8 of 10 seeds at four periods and 7 of 10 at six. Its own wall lies between six and ten periods, its failures are late parks, and the loss of every parked run with a sampled transition layer follows the $1/T$ law to within a few percent at every collocation density. The
 discrete-time formulation, generalised so that the network input is the
 starting state itself, learns a single reusable implicit Runge--Kutta step
 of size $\Delta t = 0.8$ from the equations alone. Swept over the number
@@ -108,8 +108,7 @@ surrogates for ordinary differential equations arising in charged-particle
 track reconstruction~\cite{aaij2020}, for which a controlled proving ground
 was required. The study asks where each formulation stops working, by what
 mechanism, and what the strongest available modification costs, rather
-than simply whether it can work. The evidence base is 733 training runs on
-the continuous-time side and 241 on the discrete-time side.
+than simply whether it can work. The evidence base is 733 training runs on the continuous-time side under the original protocol, a further 654 in the failure study of Sections~\ref{sec:control} to~\ref{sec:axes} (24 supervised, 150 at a fixed budget, 240 trained to convergence, 240 on density and horizon), and 241 on the discrete-time side.
 
 The contributions are:
 
@@ -132,8 +131,7 @@ The contributions are:
   (Section~\ref{sec:size-start}); the collocation density, varied over a
   64-fold range, moves the plain formulation's failing-horizon medians by
   at most a factor 1.15 (Section~\ref{sec:density}); and targeted
-  re-placement of the collocation points changes nothing
-  (Section~\ref{sec:placement});
+  re-placement of the collocation points changes nothing (Section~\ref{sec:placement}), all under the original L-BFGS protocol; with training taken to a demonstrated plateau, density does help at two periods while the four-period wall stays (Section~\ref{sec:axes});
   \item an identification of what does order the outcomes: the starting
   state. Success at two periods occurs in 19 of the 150 causally weighted
   runs (12.7\%) at the 1\% error threshold and depends on where the start
@@ -146,6 +144,9 @@ The contributions are:
   density floor (approximately 20 collocation points per unit time here)
   below which its weight-based completion condition is met on wrong
   solutions (Sections~\ref{sec:causal} and~\ref{sec:density});
+  \item a supervised control that locates the failure: the same networks, sample times, optimiser and caps fit four periods from reference data at $3\times10^{-4}$ to $5\times10^{-3}$ in all 24 runs, so the residual objective is what fails (Section~\ref{sec:control});
+  \item an account of why, from the objective itself: every trajectory of the flow satisfies the equation exactly, so spliced candidates, of which the fixed point is the cheapest member, have zero residual on a fixed collocation set and a price of order $1/T$ under resampling; the price is then measured, loss $\times T$ constant to within a few percent over 65 parked runs from four to fifteen periods at every density (Sections~\ref{sec:splice} and~\ref{sec:axes});
+  \item a comparison of eight objectives, the published fixed-point regulariser in three variants, resampling, causal weighting and pseudo-time stepping, each trained to a demonstrated plateau at two, four and six periods with ten seeds: every fix works at two periods, every regulariser variant converges onto a spliced off-loop trajectory past them, and only pseudo-time stepping, whose mechanism prices the whole family, succeeds at four and six periods; its own wall lies between six and ten periods and collocation density does not move it (Sections~\ref{sec:arms} and~\ref{sec:axes});
   \item a generalisation of the discrete-time formulation in which the
   network input is the starting state itself, yielding a single reusable
   map that advances any state by a fixed time step, trained from the
@@ -186,8 +187,7 @@ The paper is organised as follows. Section~\ref{sec:problem} fixes the
 test problem, the reference solution and the error measures, which
 everything later is scored against. Section~\ref{sec:cont-method} is the
 complete continuous-time route: the faithful reproduction and its failure
-mechanism, causal weighting with its budget-extension test, and the three
-studies that measure the remaining resources.
+mechanism, causal weighting with its budget-extension test, the three studies that measure the remaining resources, and the failure study that locates the cause in the objective and tests the published fixes (Sections~\ref{sec:control} to~\ref{sec:axes}).
 Section~\ref{sec:disc-method} is the complete discrete-time route: the
 implicit Runge--Kutta background, the reusable one-step map, the error
 attribution, the seed and selection analysis, whole trajectories by
@@ -613,7 +613,7 @@ the collocation budget is trivially affordable and fully paid
 (Section~\ref{sec:collocation}), yet the method returns the wrong solution
 with a converged loss. What the loss lacks is anchoring: information about
 which solution is wanted, spread across the domain instead of concentrated
-at a single point. Collocation coverage is not the missing ingredient.
+at a single point. Collocation coverage is not the missing ingredient. Sections~\ref{sec:control} to~\ref{sec:axes} take this diagnosis to its conclusion: the network is shown able to represent four periods, the impostor is shown to be one member of a family of exact solutions of the equation, and the one objective that prices that family is identified and measured.
 
 A classical integration at a comparable budget gives the comparison an
 anchor (Figure~\ref{fig:rk6} and Table~\ref{tab:rk6}; the causally
@@ -1045,7 +1045,7 @@ H1 is confirmed at the horizons where the plain variant has failed
 (Table~\ref{tab:density} and Figure~\ref{fig:density}): across a 64-fold
 density range the medians at $T = 14, 27, 40$ move by factors of 1.15,
 1.01 and 1.003. Collocation cost was never the binding limit there, and
-this is now a direct measurement rather than an affordability argument.
+this is now a direct measurement rather than an affordability argument. It is a measurement under this section's protocol, L-BFGS alone from a random start. Section~\ref{sec:axes} repeats the density axis under a protocol that trains every run to a demonstrated plateau: there density 80 lifts the plain variant at two periods from 5 of 10 seeds to 10 of 10, while at four periods and beyond it still changes nothing. H1 therefore holds at four periods and beyond, and at two periods only under the original protocol.
 At $T=7$, just past one period, the plain variant sits at the margin of
 its working range and the outcome is dominated by the seed rather than
 the density: the medians range from $6.6\times10^{-4}$ to
@@ -1130,23 +1130,474 @@ how many points nor where they sit changes the long-horizon outcome.
   \label{fig:placement}
 \end{figure}
 
+\subsection{The supervised control: the network is not the problem}
+\label{sec:control}
+
+Sections~\ref{sec:cont-results} to~\ref{sec:placement} leave two
+suspects for the failure past two periods. Either the network and the
+optimiser cannot represent four periods of the oscillation, or the
+residual objective is satisfied by wrong trajectories and the optimiser
+finds them. The cleanest way to separate the two is to change nothing
+but the loss. I therefore trained the same networks, with the same
+sample-time distribution, the same optimiser and the same caps, at
+$T = 27$ on reference data alone: a plain mean squared error to the
+known states at the sample times, with no residual anywhere. Four
+architectures ($4\times50$, $6\times32$, $4\times64$, $10\times256$),
+two sample densities (20 and 100 per unit time) and three seeds give
+24 runs. The physics-trained comparison runs are those already
+reported at $T = 27$: the plain variant of Section~\ref{sec:cont-results}
+and the causally weighted variant of Section~\ref{sec:causal}, at the
+same seeds.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\linewidth]{fig_control_compare.png}
+  \caption{The supervised control at $T = 27$: every supervised run, at
+  both sample densities, against both physics variants, by
+  architecture. The separation is three to four orders of magnitude,
+  with the network, the sample times and the optimiser caps held
+  fixed.}
+  \label{fig:control-compare}
+\end{figure}
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\linewidth]{fig_control_overlay.png}
+  \caption{The reference, a supervised fit at $3.0\times10^{-4}$, and a
+  physics-trained run that follows one period and then sits at the
+  origin for the rest of the window. The rest of this section explains
+  the shape of that failure.}
+  \label{fig:control-overlay}
+\end{figure}
+
+Every one of the 24 supervised runs fits four periods, at relative
+$L_2$ errors between $3\times10^{-4}$ and $5\times10^{-3}$, where every
+physics-trained run at the same horizon sits between $0.4$ and $2.0$
+(Figures~\ref{fig:control-compare} and~\ref{fig:control-overlay}). Only
+the loss changed. The network can hold four periods in phase against a
+single anchor, and the optimiser can find those weights; what it cannot
+do is find them through the residual. The failed physics runs follow
+the reference for about one period and then sit at the origin, which is
+the system's only fixed point. A constant output there has zero time
+derivative and zero right-hand side, so its residual is exactly zero.
+The failure is therefore a property of what the residual objective
+accepts, and the next subsection works out what else it accepts. A
+supervised success shows only that the network \emph{could} express the
+answer; it does not say which change to the physics objective would
+arrive there, which is what Section~\ref{sec:arms} tests.
+
+\subsection{The family of spurious solutions and its price}
+\label{sec:splice}
+
+\paragraph{Fixed points are perfect minimisers.}
+A fixed point of the flow is a state $y^{\ast}$ with $f(y^{\ast}) = 0$.
+Van der Pol has exactly one, the origin. Its stability is read from the
+Jacobian of $f$,
+\begin{equation}
+  J(y) = \begin{pmatrix} 0 & 1 \\ -1 - 2 y_1 y_2 & 1 - y_1^2 \end{pmatrix},
+  \qquad
+  J(0,0) = \begin{pmatrix} 0 & 1 \\ -1 & 1 \end{pmatrix},
+  \label{eq:jacobian}
+\end{equation}
+whose eigenvalues at the origin solve $\lambda^2 - \lambda + 1 = 0$,
+so $\lambda = \tfrac12 \pm \tfrac{\sqrt{3}}{2}\,i$. Both real parts are
+$+\tfrac12$: a displacement from the origin grows like $e^{t/2}$ while
+rotating, and the origin is an unstable spiral, not a saddle, a
+distinction that matters for the stated limitation of the regulariser
+below. If the network output is the constant $y^{\ast}$, its residual is
+zero at every collocation point wherever the points sit, so the
+residual term of Eq.~\eqref{eq:contloss} takes its global minimum at
+every fixed point, and by continuity in the weights each fixed point
+sits at the bottom of a basin. Nothing in the residual term prefers the
+true solution to a constant at the origin; only the initial-condition
+term does, and it is a single number set against a mean over $N$
+points. This is the observation of Rohrhofer et
+al.~\cite{rohrhofer2023}.
+
+\paragraph{The splice.}
+The fixed point is only the simplest member of a family. Fix the
+collocation set and a time $t_0$, and let $\alpha(t)$ be a smooth
+function equal to $1$ near every collocation point before $t_0$, equal
+to $0$ near every collocation point after $t_0$, and equal to $0$ for
+all $t \ge t_0$. The spliced candidate $y^{\dagger} = \alpha\, y^{\ast}$,
+with $y^{\ast}$ now the true solution, satisfies the initial condition,
+is zero after $t_0$, and has residual exactly zero at every collocation
+point: near each point it coincides either with the true solution or
+with the zero function, both of which solve the equation. Its residual
+is nonzero only inside the \emph{transition layer}, the stretch where
+$\alpha$ moves from $1$ to $0$, and that stretch has been placed between
+collocation points. The empirical objective is therefore exactly zero on
+$y^{\dagger}$, the value it takes on the truth. This is Theorem~2.1 of
+Wang et al.~\cite{wang2026pseudo}, and its proof uses nothing about the
+origin except that it solves the equation. For an autonomous system
+every trajectory of the flow solves the equation, and so does every
+time-shift of one, so in place of the zero function one may splice in
+any trajectory $v(t)$: the candidate that follows $y^{\ast}$ near the
+collocation points before $t_0$ and $v$ near those after has zero
+empirical residual too. Two other members of the family appear in the
+results below: the phase-shifted loop, because the residual cannot see
+phase and only the anchor at $t = 0$ fixes it, and off-loop trajectories
+entering from far outside the cycle. This is the exact form of the
+statement made informally in Section~\ref{sec:cont-results}: the
+impostors are not approximate solutions, they are exact ones, joined to
+the truth where the loss cannot look.
+
+\paragraph{What resampling changes.}
+The exact zero depends on the collocation set being fixed. If fresh
+points are drawn every training step the layer is eventually sampled
+and its cost becomes finite. Inside a layer of width $h$ the residual is
+of order $|y^{\ast}(t_0)|/h$, and the mean over the window collects that
+squared over the layer,
+\begin{equation}
+  \frac{1}{T} \int_{\mathrm{layer}} \left| \frac{y^{\ast}(t_0)}{h} \right|^2 dt
+  \;\sim\; \frac{|y^{\ast}(t_0)|^2}{h\, T}.
+  \label{eq:layerprice}
+\end{equation}
+A hand-over from the loop to the origin taking about a period
+($h \approx 2$) at amplitude $2$ in a window $T = 27$ costs of order
+$4/(2 \times 27) \approx 0.07$. Three effects therefore push the same
+way as $T$ grows: the price of a splice falls like $1/T$; the number of
+places to put one grows like $T$; and the price of the truth rises,
+because the network must hold $T/6.663$ oscillations in phase against a
+single anchor. Resources such as network size or a denser fixed
+collocation set change the price of representing the truth; none of
+them changes the price of a splice, which is set by the objective. That
+is why Sections~\ref{sec:size-start} to~\ref{sec:placement} came back
+null at four periods.
+
+\paragraph{The three papers and what each fix prices.}
+Rohrhofer et al.~\cite{rohrhofer2023} supply the diagnosis: fixed points
+are global minima of the physics loss with non-trivial basins, success
+falls as the horizon grows and as the start approaches a fixed point, no
+architecture resolves the failures, and near a fixed point the spurious
+minimum can be better than the true one. They propose no remedy and do
+not distinguish the fixed point from other zero-residual candidates.
+Babic et al.~\cite{babic2025} add a regulariser, $C \times \frac1N
+\sum_i R_{\mathrm{SE}}(t_i)\, R_{\mathrm{LS}}(t_i)$, where the
+local-stability factor $R_{\mathrm{LS}} = \sum_{\lambda}
+\max(\mathrm{Re}\,\lambda, 0)$ sums the positive real parts of the
+eigenvalues of the Jacobian at the network's output, the stillness
+factor $R_{\mathrm{SE}} = \exp(-\|\dot y_\theta\|^2/\varepsilon)$ with
+$\varepsilon = 0.01$ is one only where the network's trajectory has
+stopped, and the coefficient decays linearly from $0.5$ to zero at half
+the training. On the true loop the slowest speed squared is $0.59$, so
+the term is inert on the correct solution by construction. Their van
+der Pol demonstration stops at $T = 15$, about two periods, and their
+published protocol resamples 1024 collocation points every epoch, so
+the published ``regularised PINN'' is the regulariser plus resampling.
+Wang et al.~\cite{wang2026pseudo} prove the splice theorem above, note
+that under resampling a layer of width $h$ still costs only of order
+$h^{-1}$, and propose \emph{pseudo-time stepping}: the residual at
+training step $k$ is replaced by a relaxed version that also penalises
+change from the previous iterate,
+\begin{equation}
+  L_k(\theta) = \frac{1}{N} \sum_{i=1}^{N}
+  \left\| \frac{y_\theta(t_i) - y_{\theta_{k-1}}(t_i)}{\tau_k}
+  + r_\theta(t_i) \right\|^2 + L_{\mathrm{IC}}(\theta),
+  \label{eq:pseudotime}
+\end{equation}
+with fresh collocation points every step, the implicit Euler
+discretisation of the artificial dynamics $\partial u/\partial s =
+-r[u]$ in a pseudo-time $s$. One pseudo-time update of a spliced
+candidate turns its hidden layer residual of order $h^{-1}$ into order
+$h^{-1} + \tau^2 h^{-3}$, an amplification by $\tau^2/h^2$, so the
+relaxed objective penalises spliced candidates far more than the plain
+residual does. The step $\tau$ is set adaptively from a finite-difference
+surrogate of the residual Jacobian; I follow their reference code, which
+produced their published numbers, where it and their text disagree on
+the late-training shrink of $\tau$.
+
+The family gives one frame for every method. A spliced candidate sits
+still only if the spliced-in trajectory is the fixed point; its
+transition layer is invisible on a fixed set and costs $h^{-1}$ under
+resampling; and it is cheaper than the truth by a margin that shrinks
+like $1/T$. Before the runs, I therefore expected the regulariser to
+close exactly one member of the family, the origin, and to convert
+parking into some other member at long horizons; resampling alone to
+produce a parked stationary point with a loss at the layer scale, of
+order $10^{-2}$; pseudo-time stepping, the only method whose mechanism
+prices the whole family, to be the one to judge at $T \ge 27$; causal
+weighting to delay the splice without removing its incentive; and
+longer training to change nothing, because an exact minimiser cannot be
+trained away, only revealed.
+
+\subsection{Eight objectives trained to convergence}
+\label{sec:arms}
+
+\paragraph{Arms and protocol.}
+All arms share the $4\times50$ network, the start $(2, 0)$, a
+collocation density of 20 points per unit time, and seeds 0 to 9, at
+$T \in \{14, 27, 40\}$ (2.1, 4.1 and 6.0 periods). The arms are: the
+plain objective on a fixed Latin-hypercube set; the same with the
+points redrawn every epoch (\emph{resample}); the regulariser with the
+published dose, coefficient $0.5$ decaying to $0$ over the first 30,000
+epochs; the regulariser held at $0.5$ throughout and kept in the
+polish; the regulariser plus resampling, which is the published
+protocol; pseudo-time stepping with the reference code's adaptive step;
+causal weighting with the front propagated by Adam and $\varepsilon$
+annealed from $0.01$ to $100$; and causal weighting plus the
+regulariser. The regulariser is implemented as published; its
+eigenvalue term was checked against a numerical eigen-decomposition and
+its gradients are finite. A fixed-budget first pass of 150 runs cured
+$T = 14$ but left the regularised runs at $T \ge 27$ still descending
+when cut off, so every run reported here was trained to a demonstrated
+plateau: Adam at learning rate $10^{-3}$ until the objective improved by
+less than $10^{-4}$ over the trailing 10,000 epochs (tested only after
+60,000 epochs and, for regularised arms, only once the term is off; cap
+200,000), then an L-BFGS polish on the plain objective of up to 60
+restarts of 200 iterations with the stall rule of Section~\ref{sec:causal}.
+Every loss term is logged every 250 epochs and a per-run convergence
+verdict is stored; converged and budget-limited runs are never pooled.
+Of the 240 runs, 239 satisfy the rule. Every non-success is classified
+from its residual on the reference grid: \emph{parked} if more than
+30\,\% of the window sits within $0.2$ of the origin;
+\emph{flow-following} if the residual is below $0.05$ on at least
+60\,\% of the window with a peak above $1$, the signature of a splice;
+\emph{diffuse} otherwise.
+
+\begin{table}[tbp]
+  \centering
+  \caption{Eight objectives at two, four and six periods, ten seeds
+  each, every run trained to a demonstrated plateau and polished to a
+  stall. Success is relative $L_2 < 0.15$ over the window, the threshold
+  of the two Graz papers. The last column classifies the failures past
+  two periods (counts at $T = 27$; $T = 40$ in parentheses).}
+  \label{tab:arms}
+  \footnotesize
+  \resizebox{\linewidth}{!}{%
+  \begin{tabular}{lcccll}
+    \toprule
+    arm & $T=14$ & $T=27$ & $T=40$ & median rel.\ $L_2$, $T=27$ / $40$ & failures past two periods \\
+    \midrule
+    plain & 5/10 & 0/10 & 0/10 & $0.95$ / $0.94$ & parked 9, diffuse 1 (10 parked) \\
+    resample & 10/10 & 0/10 & 0/10 & $0.90$ / $0.94$ & parked 10 at loss $0.02$--$0.03$ (10) \\
+    regulariser & 10/10 & 0/10 & 0/10 & $2.2$ / $3.6$ & flow-following 6, diffuse 3, parked 1 (7, 3) \\
+    regulariser always on & 10/10 & 0/10 & 0/10 & $1.9$ / $2.7$ & flow-following 8, diffuse 2 (5, 5) \\
+    regulariser + resampling & 10/10 & 0/10 & 0/10 & $1.7$ / $2.6$ & flow-following 6, diffuse 4 (5, 5) \\
+    pseudo-time stepping & 10/10 & \textbf{8/10} & \textbf{7/10} & $\mathbf{5.2\times10^{-4}}$ / $\mathbf{5.4\times10^{-3}}$ & parked 2 (parked 2, diffuse 1) \\
+    causal & 8/10 & 0/10 & 0/10 & $1.9$ / $2.1$ & parked 2, flow-following 4, diffuse 4 \\
+    causal + regulariser & 7/10 & 0/10 & 0/10 & $2.2$ / $2.1$ & flow-following 7, diffuse 2, parked 1 \\
+    \bottomrule
+  \end{tabular}}
+\end{table}
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\linewidth]{fig_arms_summary.png}
+  \caption{Success rate (left) and median relative $L_2$ (right) per
+  arm and horizon, ten seeds per point. Every arm reaches two periods;
+  only pseudo-time stepping survives past them.}
+  \label{fig:arms-summary}
+\end{figure}
+
+\paragraph{Results.}
+Table~\ref{tab:arms} and Figure~\ref{fig:arms-summary} give the
+headline. Every fix works at two periods, where the regulariser paper
+tested it: the plain objective's 5 of 10 becomes 10 of 10 under
+resampling, under the regulariser, or under pseudo-time stepping. Past
+two periods every arm is 0 of 10 except pseudo-time stepping, whose
+eight successes at four periods span $8.5\times10^{-5}$ to
+$8.4\times10^{-4}$ and whose seven at six periods span
+$4.2\times10^{-4}$ to $8.9\times10^{-3}$; its adaptive step settled
+between $0.5$ and $0.9$ in every run. The failures divide into the
+three classes predicted above (Figures~\ref{fig:arms-traj}
+to~\ref{fig:arms-residual}). The plain and resampled objectives park at
+the origin after about one period; the fixed-set parks reach the same
+loss as a success, and the resampled parks sit at a loss of $0.02$ to
+$0.03$ with zero gradient, the stationary point at the layer scale that
+Eq.~\eqref{eq:layerprice} predicts. Every regulariser variant instead
+converges onto a spliced off-loop trajectory: the residual is below
+$0.05$ on more than 95\,\% of the window with one spike of $10^2$ to
+$10^3$ immediately after $t = 0$, the network satisfies the anchor,
+splices within the first unsampled gap onto a trajectory of the flow
+entering from $y_1 \approx 4.5$, and rides it onto the loop out of
+phase, with a converged loss of $10^{-5}$ to $10^{-4}$. The regulariser
+closed the origin and the optimiser took the next-cheapest member of
+the family; keeping the term on, or adding resampling to it, changes
+nothing, as expected. The loss-term curves
+(Figure~\ref{fig:arms-lossterms}) add two facts: in the regularised arms
+the raw regulariser value rises after switch-off while the objective
+keeps falling, and the polish drives the flow-following objectives
+below $10^{-4}$ without moving the error at all. Loss and error
+decouple on that branch, which is the silent failure of
+Section~\ref{sec:cont-results} in its converged form.
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\linewidth]{fig_arms_traj_T27.png}
+  \caption{$T = 27$, both state components against time, every seed
+  faint and the median-error seed bold, coloured by outcome (green
+  success, red parked, blue flow-following, grey diffuse). The plain
+  and resampled objectives follow the reference for about one period
+  and stop at the origin; every regulariser variant leaves through the
+  top of the frame at $t = 0$ and rides an off-loop trajectory back onto
+  the cycle out of phase; pseudo-time stepping sits on the reference for
+  the whole window.}
+  \label{fig:arms-traj}
+\end{figure}
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\linewidth]{fig_arms_phase_T27.png}
+  \caption{The same runs in the phase plane, the median-error seed
+  coloured by time. The plain and resampled fits spiral into the origin;
+  the regulariser variants enter from the right at $y_1 \approx 4.5$,
+  far outside the cycle, and join the loop; pseudo-time stepping draws
+  the loop itself. Several regularised fits sit on the loop and are
+  still wrong in time.}
+  \label{fig:arms-phase}
+\end{figure}
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\linewidth]{fig_arms_residual_T27.png}
+  \caption{Where the residual is paid at $T = 27$: the absolute residual
+  of the trained network on the reference grid, every seed, dotted line
+  at $0.05$. Parks show a moderate residual across the hand-over and
+  then quiet; every regulariser variant shows a residual below $0.05$
+  almost everywhere with one spike right after $t = 0$, a splice placed
+  in the first unsampled gap; pseudo-time successes show a flat residual
+  near $10^{-3}$.}
+  \label{fig:arms-residual}
+\end{figure}
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\linewidth]{fig_arms_lossterms_T27.png}
+  \caption{Every loss term through training at $T = 27$: objective,
+  initial-condition term, residual term, the arm's own extra term and
+  the relative $L_2$, every seed, Adam then the polish restarts. The
+  parked plain runs reach the same objective as a success; in the
+  regularised arms the regulariser value rises after switch-off while
+  the objective falls; the polish lowers the flow-following objectives
+  below $10^{-4}$ without moving the error.}
+  \label{fig:arms-lossterms}
+\end{figure}
+
+\subsection{Density and horizon for pseudo-time stepping}
+\label{sec:axes}
+
+With one fix working, I measured how it responds to the two resources
+a practitioner would reach for, with the plain objective as the
+baseline and the regulariser plus resampling as the published control,
+same protocol, seeds 0 to 9: collocation densities of 80 and 320 points
+per unit time on top of 20 at $T = 14, 27, 40$, and horizons of $T = 67$
+and $100$ (ten and fifteen periods) at density 20; 240 runs.
+
+\begin{table}[tbp]
+  \centering
+  \caption{Successes out of ten against collocation density (left) and
+  horizon at density 20 (right). The density-20 column and the
+  $T \le 40$ entries are the runs of Table~\ref{tab:arms}.}
+  \label{tab:axes}
+  \small
+  \begin{tabular}{lccc@{\hskip 2em}ccccc}
+    \toprule
+    & \multicolumn{3}{c}{density, $T=27$ / $T=40$} & \multicolumn{5}{c}{horizon, $T$} \\
+    arm & 20 & 80 & 320 & 14 & 27 & 40 & 67 & 100 \\
+    \midrule
+    pseudo-time stepping & 8 / 7 & 9 / 5 & 10 / 8 & 10 & 8 & 7 & 1 & 0 \\
+    plain & 0 / 0 & 0 / 0 & 0 / 0 & 5 & 0 & 0 & 0 & 0 \\
+    regulariser + resampling & 0 / 0 & 3 / 0 & 0 / 0 & 10 & 0 & 0 & 0 & 0 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\linewidth]{fig_axes_density.png}
+  \caption{Success rate (top) and median relative $L_2$ (bottom)
+  against collocation density, one column per horizon, ten seeds per
+  point.}
+  \label{fig:axes-density}
+\end{figure}
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\linewidth]{fig_axes_horizon.png}
+  \caption{Success (left), median relative $L_2$ (middle) and the number
+  of periods survived before the cumulative relative $L_2$ exceeds
+  $0.15$ (right), per run, against the horizon in periods.}
+  \label{fig:axes-horizon}
+\end{figure}
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=\linewidth]{fig_axes_long_horizon.png}
+  \caption{Pseudo-time stepping at $T = 67$ and $T = 100$, $y_1$
+  against time in periods for every seed, coloured by class. The
+  failures are late parks: the network rides the loop for four to eight
+  periods, drifts off, and sits at the origin. Nothing wanders off the
+  loop.}
+  \label{fig:axes-long}
+\end{figure}
+
+\begin{figure}[tbp]
+  \centering
+  \includegraphics[width=0.75\linewidth]{fig_axes_parked_loss.png}
+  \caption{The converged loss of every parked run against $T$, with
+  the $1/T$ line through the median of loss $\times T$ over the
+  resampled arms. The resampled arms at every density, and the plain
+  arm at densities 80 and 320, sit on the line from $T = 27$ to
+  $T = 100$; the plain arm at density 20 sits three to four orders
+  lower.}
+  \label{fig:axes-parked}
+\end{figure}
+
+Three things move (Table~\ref{tab:axes}, Figure~\ref{fig:axes-density}).
+At two periods, density 80 lifts the plain objective from 5 of 10 to
+10 of 10, so the null verdict of Section~\ref{sec:density}, obtained at
+a fixed budget with L-BFGS alone, does not survive training to
+convergence; at four periods and beyond the plain objective still fails
+at every density, so the verdict there stands. The published
+regulariser protocol has its first successes past two periods at
+density 80, 3 of 10 at four periods, one of them converged and two
+budget-limited, with the other seven diffuse; at density 320 it is back
+to 0 of 10. And pseudo-time stepping's parking rate at four periods
+falls with density, 8, 9 and 10 of 10, while at six periods it does not
+move in any direction, 7, 5 and 8 of 10, with different seeds parking
+at each density and every parked run sitting at the same loss whatever
+the density. Ten seeds cannot separate the six-period rates.
+
+On the horizon axis (Figures~\ref{fig:axes-horizon}
+and~\ref{fig:axes-long}), pseudo-time stepping's own wall at density 20
+lies between six and ten periods: 7 of 10 at six, 1 of 10 at ten (a
+marginal success at $5\times10^{-2}$ with the polish at its cap), 0 of
+10 at fifteen. The failure mode does not change with the horizon, it
+arrives later: the parked branch after four to eight good periods.
+
+Figure~\ref{fig:axes-parked} tests the price of Eq.~\eqref{eq:layerprice}
+directly. Over the 65 parked runs whose transition layer is actually
+sampled, the resampled arms at any density and the plain arm at
+densities 80 and 320, loss $\times T$ has median $0.85$ and ranges
+$0.84$ to $0.90$, from $T = 27$ to $100$. The plain arm's parked runs at
+density 20 sit three to four orders of magnitude lower, because a fixed
+set of 20 points per unit time leaves room to hide the layer; at
+density 80 the gap is too small to hide in and a fixed set behaves like
+resampling. Two consequences follow. The $1/T$ prediction holds
+quantitatively. And more density cannot move a resampled method's wall
+by pricing: the parked branch is already fully sampled, so denser points
+do not raise its price. What density can do is make the descent to the
+truth cheaper than the descent to the park in more seeds, which is what
+the four-period column shows and the six-period column does not. Cost
+grows roughly linearly with the number of collocation points; the
+density-320 runs at $T = 40$, with 12,800 points, took about four hours
+each, the most expensive in this chapter.
+
+Four issues remain open. Density is not a lever past four periods and
+multiplies the cost. The wall between six and ten periods is a late
+park, and what sets its position, the $\tau$ schedule, the anchor's
+fading influence or the $1/T$ price finally undercutting the truth, is
+not yet measured. The failure classifier reads late parks as diffuse,
+so the periods-survived readout of Figure~\ref{fig:axes-horizon} is the
+right one for long windows. And the regulariser protocol's three
+successes at density 80 are mostly budget-limited and should be
+extended before they are counted.
+
 \subsection{What the continuous-time route establishes}
 \label{sec:cont-summary}
 
-The continuous-time formulation works, per starting state, up to a
-horizon that no resource moves. It reproduces the source work's accuracy
-below one period; causal weighting, the strongest loss-level modification
-in the literature, moves the failure from one period out to two and
-makes it visible in the training telemetry; and beyond that,
-optimisation budget ($4\times$, none of seven), network size (600 runs,
-depth harmful), collocation density (64-fold range) and collocation
-placement all leave the outcome unchanged. The one variable that orders
-outcomes is the starting state: success at two periods occurs in 19 of
-150 causally weighted runs at the 1\% threshold and depends on where the
-start sits, and at four periods none of the 300 runs of either variant
-succeeds. Taken together, these findings motivate imposing the physics
-structurally instead, which is the discrete-time formulation of the next
-section.
+The continuous-time formulation works, per starting state, up to a horizon that no resource moves. It reproduces the source work's accuracy below one period; causal weighting, the strongest loss-level modification in the literature, moves the failure from one period out to two and makes it visible in the training telemetry; and beyond that, optimisation budget ($4\times$, none of seven), network size (600 runs, depth harmful), collocation density (64-fold range) and collocation placement all leave the outcome unchanged under the original protocol. The one variable that orders those outcomes is the starting state: success at two periods occurs in 19 of 150 causally weighted runs at the 1\% threshold and depends on where the start sits, and at four periods none of the 300 runs of either variant succeeds. The failure study then says why. The same networks fit four periods from data, so the objective is at fault; the objective is exactly satisfied by a whole family of spliced trajectories of which the fixed point is the cheapest, at a price that falls like $1/T$ under resampling and is measured to do so; the published fixed-point regulariser closes the origin and the optimiser takes the next member of the family; and the one objective that prices the whole family, pseudo-time stepping with resampling, carries the formulation from two periods to six, with its own wall between six and ten and no help from collocation density. Taken together, these findings say that the continuous-time formulation fails through what its objective accepts, that the fix must act on the objective rather than on any resource, and that even the best such fix runs out within ten periods; they motivate imposing the physics structurally instead, which is the discrete-time formulation of the next section.
 
 % ===========================================================================
 \section{The discrete-time formulation}
@@ -1802,16 +2253,17 @@ adds one fact to this literature: the weight condition itself has a
 density floor (about 20 points per unit time here) below which it is met
 on wrong solutions (Section~\ref{sec:density}). The failure
 modes measured here sit within the broader literature on PINN optimisation
-pathologies~\cite{wang2021gradient,krishnapriyan2021}, with more
-instrumentation per failure than is usual.
+pathologies~\cite{wang2021gradient,krishnapriyan2021}, with more instrumentation per failure than is usual.
+
+\paragraph{Relation to the fixed-point literature.}
+The failure study places this chapter's measurements inside the account of Rohrhofer et al.~\cite{rohrhofer2023}, who showed that fixed points of the dynamical system are global minima of the physics loss, and extends it: the fixed point is the cheapest member of a family of exactly zero-residual splices, any trajectory of the flow can be spliced in, and the family's price under resampling is of order $1/T$, which the parked runs of Section~\ref{sec:axes} reproduce to within a few percent from four to fifteen periods. The regulariser of Babic et al.~\cite{babic2025} does exactly what its construction says and no more: it prices sitting still at an unstable fixed point, cures the horizons where the origin was the only member in play, and at four periods and beyond hands the optimiser the next member of the family, an off-loop trajectory joined in the first unsampled gap, in every variant including their published protocol. Their van der Pol horizons stopped at two periods, which is why they did not see this. Pseudo-time stepping~\cite{wang2026pseudo} is the only method tested whose mechanism prices the whole family, and it is the only one that works past two periods; its authors tested partial differential equations and did not consider fixed points or phase, so the van der Pol result is a new instance of their theorem rather than a reproduction. What none of the three papers gives, and this chapter adds, is the converged failure anatomy: which member of the family each objective settles on, at what loss, and the fact that the loss keeps falling on the wrong member while the error does not move.
 
 \paragraph{The recurring observation.}
 The equation alone admits many solutions, and any stretch of the domain the
 loss cannot see is eventually exploited by the optimiser: late times in the
 plain formulation, the intervals between collocation points in the causally
 weighted one. Each modification closed one such opening and exposed the
-next, at increasing cost. The resource axes are now all measured, and none
-changes the outcome, so what remains is the starting state's position.
+next, at increasing cost. The resource axes are all measured and none changes the outcome at four periods; what does change it is the objective: pricing the whole family of spliced solutions, as pseudo-time stepping does, moves the wall from two periods to six, and nothing tested moves it past ten.
 Two corollaries deserve emphasis. Phase-plane
 agreement is necessary but never sufficient: an orbit can lie exactly on
 the limit cycle and be order-one wrong in time
@@ -1828,7 +2280,7 @@ the way to a rank correlation of $+0.974$ across 135 architectures.
 \section{Future work}
 \label{sec:future}
 
-Five studies follow naturally from these measurements; I list them in the
+Six studies follow naturally from these measurements; I list them in the
 order I would run them.
 
 \begin{itemize}
@@ -1842,11 +2294,8 @@ order I would run them.
   from the loss landscape: whether a different optimiser class, training
   schedule, or curriculum over the training region moves the
   $3.6\times10^{-3}$ floor at fixed architecture.
-  \item \textbf{The $\varepsilon$ schedule.} The measured hardening of
-  the weight condition with horizon suggests the variant
-  $\varepsilon \propto 1/T$, which directly compensates the whole-history
-  integral's growth; the placement and density studies fix everything
-  needed to test it in isolation.
+  \item \textbf{The late parks of pseudo-time stepping.} Its failures at six to fifteen periods ride the loop for four to eight periods and then park. What sets that position, the adaptive $\tau$ schedule, the anchor's fading influence or the $1/T$ price finally undercutting the truth, is unmeasured; the per-run telemetry of Section~\ref{sec:arms} is the instrument, and a fixed-$\tau$ arm and a starting-state sweep are the first two runs.
+  \item \textbf{An extension check of the regulariser protocol.} Its three successes at four periods and density 80 are budget-limited; extending them, and the causal $\varepsilon \propto 1/T$ variant suggested by the weight condition's hardening with horizon, closes the two loose ends of the continuous route.
   \item \textbf{Inverse problems.} The source work's data-driven discovery
   setting, recovering the damping parameter $\mu$ from noisy
   observations, has a natural discrete-time variant that reuses exactly
@@ -1867,8 +2316,7 @@ below one period of the limit cycle and fails structurally beyond it,
 collapsing onto zero-residual spurious solutions while its training loss
 converges. In these measurements, no resource changed that outcome: ample
 collocation, a four-fold optimisation budget, 25 network architectures at
-600 runs, a 64-fold density range, and targeted re-placement of the
-collocation points. The strongest loss-level modification moves the
+600 runs, a 64-fold density range, and targeted re-placement of the collocation points. A supervised control showed the same networks fitting four periods from data, so the fault lies in the objective: it is exactly satisfied by a family of spliced trajectories of which the fixed point is the cheapest, at a price that falls like $1/T$ and is measured to do so. Every published fix works at two periods; the fixed-point regulariser, in every variant, converges onto the next member of the family past them, and only pseudo-time stepping, which prices the whole family, carries the formulation to six periods, with its own wall short of ten. The strongest loss-level modification short of that moves the
 failure out by one period at a cost that grows faster than linearly, and
 what orders the outcomes is the starting state: success at two periods
 occurred in 19 of 150 causally weighted runs at the 1\% threshold, and at
@@ -1891,8 +2339,7 @@ perfect labels, with no reference data needed in exchange. For
 initial-value problems on long horizons, these findings favour
 formulations that re-anchor the physics on known states step by step;
 and on this problem the binding failure of the continuous-time
-formulation was not the cost of enforcing the equation, but the
-optimiser's freedom to satisfy it on the wrong solution.
+formulation was not the cost of enforcing the equation, but the optimiser's freedom to satisfy it on the wrong solution, a freedom this chapter has now measured, priced, and, up to six periods, removed.
 
 % ---------------------------------------------------------------------------
 \section*{Data availability}
